@@ -7,14 +7,52 @@
 - `frontend/`: Vite + React + React Router, trang landing/login/register/timhieuthem, assets trong `frontend/public/image/`.
 - `image/`: ảnh nguồn dùng cho frontend (đã copy vào `frontend/public/image/`).
 
+## Cài đặt PostgreSQL (Docker - data trên ổ E:)
+
+**Cách 1: Dùng script PowerShell (khuyến nghị)**
+```powershell
+# Chạy script tự động
+.\start-postgres.ps1
+```
+
+**Cách 2: Dùng Docker Compose trực tiếp**
+```bash
+# Tạo thư mục data trên ổ E:
+mkdir E:\postgres_data
+
+# Khởi động PostgreSQL container
+docker-compose -f docker-postgres.yml up -d
+
+# Kiểm tra logs
+docker logs smartnotes_db
+
+# Dừng PostgreSQL
+docker-compose -f docker-postgres.yml down
+```
+
+**Thông tin kết nối:**
+- Host: `localhost:5432`
+- Database: `smartnotes`
+- User: `smartnotes`
+- Password: `smartnotes123`
+- Connection string: `postgresql+asyncpg://smartnotes:smartnotes123@localhost:5432/smartnotes`
+
+**Lưu ý:** Data sẽ được lưu tại `E:\postgres_data`
+
 ## Chạy backend (dev)
 ```bash
 cd backend
 python -m venv .venv
 .venv\Scripts\activate  # Windows
 pip install -r requirements.txt
-set DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/smartnotes
+
+# Copy env.example thành .env và chỉnh sửa
+copy env.example .env
+
+# Hoặc set trực tiếp:
+set DATABASE_URL=postgresql+asyncpg://smartnotes:smartnotes123@localhost:5432/smartnotes
 set JWT_SECRET_KEY=change-me
+
 uvicorn app.main:app --reload
 ```
 

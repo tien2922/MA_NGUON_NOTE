@@ -1,6 +1,49 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Register() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { register } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    // Validation
+    if (!email || !password || !confirmPassword) {
+      setError("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Mật khẩu phải có ít nhất 6 ký tự");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Mật khẩu xác nhận không khớp");
+      return;
+    }
+
+    setLoading(true);
+    const result = await register(email, password);
+    setLoading(false);
+
+    if (result.success) {
+      navigate("/"); // Chuyển về trang chủ sau khi đăng ký thành công
+    } else {
+      setError(result.error || "Đăng ký thất bại. Vui lòng thử lại.");
+    }
+  };
+
   return (
     <div className="font-display bg-background-light dark:bg-background-dark min-h-screen text-text-primary-light dark:text-text-primary-dark">
       <div className="relative flex min-h-screen w-full flex-col items-center justify-center p-4">
@@ -19,17 +62,12 @@ export default function Register() {
           </div>
 
           <div className="bg-white dark:bg-background-dark rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-8">
-            <form className="space-y-6">
-              <div>
-                <label className="flex flex-col w-full">
-                  <p className="pb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Tên người dùng</p>
-                  <input
-                    className="form-input flex w-full flex-1 resize-none overflow-hidden rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 p-3 text-base font-normal text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    placeholder="Nhập tên người dùng của bạn"
-                    type="text"
-                  />
-                </label>
-              </div>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
 
               <div>
                 <label className="flex flex-col w-full">
@@ -38,6 +76,10 @@ export default function Register() {
                     className="form-input flex w-full flex-1 resize-none overflow-hidden rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 p-3 text-base font-normal text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     placeholder="Nhập địa chỉ email của bạn"
                     type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading}
                   />
                 </label>
               </div>
@@ -48,14 +90,19 @@ export default function Register() {
                   <div className="relative flex w-full items-stretch">
                     <input
                       className="form-input flex w-full flex-1 resize-none overflow-hidden rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 p-3 pr-10 text-base font-normal text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      placeholder="Nhập mật khẩu của bạn"
-                      type="password"
+                      placeholder="Nhập mật khẩu của bạn (tối thiểu 6 ký tự)"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
                     />
                     <button
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                       type="button"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                      onClick={() => setShowPassword(!showPassword)}
                     >
-                      <span className="material-symbols-outlined text-xl">visibility</span>
+                      <span className="material-symbols-outlined text-xl">{showPassword ? "visibility_off" : "visibility"}</span>
                     </button>
                   </div>
                 </label>
@@ -68,13 +115,18 @@ export default function Register() {
                     <input
                       className="form-input flex w-full flex-1 resize-none overflow-hidden rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 p-3 pr-10 text-base font-normal text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                       placeholder="Nhập lại mật khẩu của bạn"
-                      type="password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      disabled={loading}
                     />
                     <button
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                       type="button"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     >
-                      <span className="material-symbols-outlined text-xl">visibility_off</span>
+                      <span className="material-symbols-outlined text-xl">{showConfirmPassword ? "visibility_off" : "visibility"}</span>
                     </button>
                   </div>
                 </label>
@@ -82,10 +134,11 @@ export default function Register() {
 
               <div>
                 <button
-                  className="flex h-12 w-full items-center justify-center rounded-lg bg-primary px-6 text-base font-semibold text-white transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background-dark"
                   type="submit"
+                  disabled={loading}
+                  className="flex h-12 w-full items-center justify-center rounded-lg bg-primary px-6 text-base font-semibold text-white transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background-dark disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Đăng ký
+                  {loading ? "Đang đăng ký..." : "Đăng ký"}
                 </button>
               </div>
             </form>
