@@ -59,10 +59,13 @@ export default function Dashboard() {
     }
   };
 
-  const filteredNotes = notes.filter((note) =>
-    note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    note.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Tìm kiếm notes
+  const filteredNotes = searchQuery
+    ? notes.filter((note) =>
+        note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        note.content.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : notes;
 
   const handleCreateNote = () => {
     setEditingNote(null);
@@ -81,7 +84,8 @@ export default function Dashboard() {
     if (window.confirm("Bạn có chắc chắn muốn xóa ghi chú này?")) {
       try {
         await notesAPI.deleteNote(noteId);
-        setNotes(notes.filter(n => n.id !== noteId));
+        // Refresh danh sách notes
+        await fetchNotes();
       } catch (error) {
         alert("Lỗi khi xóa ghi chú: " + error.message);
       }
@@ -92,13 +96,13 @@ export default function Dashboard() {
     try {
       if (editingNote) {
         // Cập nhật note
-        const updated = await notesAPI.updateNote(editingNote.id, noteData);
-        setNotes(notes.map(n => n.id === updated.id ? updated : n));
+        await notesAPI.updateNote(editingNote.id, noteData);
       } else {
         // Tạo note mới
-        const newNote = await notesAPI.createNote(noteData);
-        setNotes([newNote, ...notes]);
+        await notesAPI.createNote(noteData);
       }
+      // Refresh danh sách notes
+      await fetchNotes();
       setShowNoteEditor(false);
       setEditingNote(null);
     } catch (error) {
