@@ -124,6 +124,11 @@ export const authAPI = {
 
   // Lấy token
   getToken,
+
+  // Lấy thông tin user hiện tại
+  getCurrentUser: async () => {
+    return apiRequest('/auth/me');
+  },
 };
 
 export default apiRequest;

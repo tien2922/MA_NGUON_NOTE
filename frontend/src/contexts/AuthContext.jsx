@@ -21,17 +21,30 @@ export const AuthProvider = ({ children }) => {
     // Kiểm tra xem đã đăng nhập chưa khi component mount
     const token = authAPI.getToken();
     if (token) {
-      // Có thể decode token để lấy thông tin user hoặc gọi API để lấy user info
-      // Hiện tại chỉ check token có tồn tại
-      setUser({ token });
+      // Lấy thông tin user từ API
+      authAPI.getCurrentUser()
+        .then(userData => {
+          setUser({ token, ...userData });
+        })
+        .catch(() => {
+          // Nếu lỗi, xóa token và đăng xuất
+          authAPI.logout();
+          setUser(null);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const login = async (email, password) => {
     try {
       const data = await authAPI.login(email, password);
-      setUser({ token: data.access_token, email });
+      // Lấy thông tin user sau khi đăng nhập
+      const userData = await authAPI.getCurrentUser();
+      setUser({ token: data.access_token, ...userData });
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };

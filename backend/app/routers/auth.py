@@ -9,6 +9,7 @@ from .. import schemas
 from ..core import security
 from ..core.config import settings
 from ..database import get_session
+from ..deps import get_current_user
 from ..models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -47,4 +48,9 @@ async def login_for_access_token(
     access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
     token = security.create_access_token(subject=user.email, expires_delta=access_token_expires)
     return {"access_token": token, "token_type": "bearer"}
+
+
+@router.get("/me", response_model=schemas.UserOut)
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    return current_user
 

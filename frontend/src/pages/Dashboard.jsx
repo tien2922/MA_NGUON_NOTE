@@ -2,12 +2,15 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { notesAPI } from "../services/api";
+import NoteEditor from "../components/NoteEditor";
 
 export default function Dashboard() {
   const [notes, setNotes] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const { logout, isAuthenticated } = useAuth();
+  const [showNoteEditor, setShowNoteEditor] = useState(false);
+  const [editingNote, setEditingNote] = useState(null);
+  const { logout, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -62,13 +65,45 @@ export default function Dashboard() {
   );
 
   const handleCreateNote = () => {
-    // TODO: Navigate to create note page
-    console.log("Create note");
+    setEditingNote(null);
+    setShowNoteEditor(true);
   };
 
   const handleViewNote = (noteId) => {
-    // TODO: Navigate to note detail page
-    console.log("View note:", noteId);
+    const note = notes.find(n => n.id === noteId);
+    if (note) {
+      setEditingNote(note);
+      setShowNoteEditor(true);
+    }
+  };
+
+  const handleDeleteNote = async (noteId) => {
+    if (window.confirm("Bạn có chắc chắn muốn xóa ghi chú này?")) {
+      try {
+        await notesAPI.deleteNote(noteId);
+        setNotes(notes.filter(n => n.id !== noteId));
+      } catch (error) {
+        alert("Lỗi khi xóa ghi chú: " + error.message);
+      }
+    }
+  };
+
+  const handleSaveNote = async (noteData) => {
+    try {
+      if (editingNote) {
+        // Cập nhật note
+        const updated = await notesAPI.updateNote(editingNote.id, noteData);
+        setNotes(notes.map(n => n.id === updated.id ? updated : n));
+      } else {
+        // Tạo note mới
+        const newNote = await notesAPI.createNote(noteData);
+        setNotes([newNote, ...notes]);
+      }
+      setShowNoteEditor(false);
+      setEditingNote(null);
+    } catch (error) {
+      alert("Lỗi khi lưu ghi chú: " + error.message);
+    }
   };
 
   return (
@@ -84,6 +119,11 @@ export default function Dashboard() {
               <p className="text-text-secondary-light dark:text-text-secondary-dark text-sm font-normal leading-normal">
                 Không gian cá nhân của bạn
               </p>
+              {user && (
+                <p className="text-text-primary-light dark:text-text-primary-dark text-sm font-medium leading-normal mt-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                  👤 {user.username}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-1">
               <a
@@ -124,7 +164,7 @@ export default function Dashboard() {
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  // TODO: Navigate to settings
+                  navigate("/settings");
                 }}
               >
                 <span className="material-symbols-outlined">settings</span>
@@ -216,12 +256,20 @@ export default function Dashboard() {
                               {formatTimeAgo(note.updated_at)}
                             </p>
                           </div>
-                          <button
-                            className="flex shrink-0 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 transition-colors"
-                            onClick={() => handleViewNote(note.id)}
-                          >
-                            <span className="truncate">Xem</span>
-                          </button>
+                          <div className="flex gap-2">
+                            <button
+                              className="flex shrink-0 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 transition-colors"
+                              onClick={() => handleViewNote(note.id)}
+                            >
+                              <span className="truncate">Sửa</span>
+                            </button>
+                            <button
+                              className="flex shrink-0 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-red-500 text-white text-sm font-medium leading-normal hover:bg-red-600 transition-colors"
+                              onClick={() => handleDeleteNote(note.id)}
+                            >
+                              <span className="truncate">Xóa</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -232,6 +280,18 @@ export default function Dashboard() {
           </div>
         </main>
       </div>
+
+      {/* Note Editor Modal */}
+      {showNoteEditor && (
+        <NoteEditor
+          note={editingNote}
+          onSave={handleSaveNote}
+          onClose={() => {
+            setShowNoteEditor(false);
+            setEditingNote(null);
+          }}
+        />
+      )}
     </div>
   );
 }
