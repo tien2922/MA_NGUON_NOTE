@@ -35,10 +35,22 @@ const apiRequest = async (endpoint, options = {}) => {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Có lỗi xảy ra' }));
-    throw new Error(error.detail || 'Có lỗi xảy ra');
+    throw new Error(error.detail || `HTTP ${response.status}: ${response.statusText}`);
   }
 
-  return response.json();
+  // Nếu response là 204 No Content, không parse JSON
+  if (response.status === 204) {
+    return null;
+  }
+
+  // Kiểm tra xem response có body không
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
+  }
+
+  return null;
 };
 
 // Notes API
@@ -72,9 +84,10 @@ export const notesAPI = {
 
   // Xóa note
   deleteNote: async (noteId) => {
-    return apiRequest(`/notes/${noteId}`, {
+    const result = await apiRequest(`/notes/${noteId}`, {
       method: 'DELETE',
     });
+    return result; // Có thể là null nếu 204
   },
 };
 

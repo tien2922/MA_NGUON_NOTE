@@ -28,6 +28,9 @@ export default function NoteEditor({ note, onSave, onClose }) {
         title: title.trim(),
         content: content.trim(),
         is_markdown: true,
+        folder_id: null,
+        tag_ids: [],
+        is_public: false,
       });
     } finally {
       setLoading(false);

@@ -10,16 +10,19 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
-  const { logout, isAuthenticated, user } = useAuth();
+  const { logout, isAuthenticated, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Đợi auth loading xong mới check
+    if (authLoading) return;
+    
     if (!isAuthenticated) {
       navigate("/dangnhap");
       return;
     }
     fetchNotes();
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, authLoading, navigate]);
 
   const fetchNotes = async () => {
     try {

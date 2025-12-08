@@ -19,24 +19,24 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Kiểm tra xem đã đăng nhập chưa khi component mount
-    const token = authAPI.getToken();
-    if (token) {
-      // Lấy thông tin user từ API
-      authAPI.getCurrentUser()
-        .then(userData => {
-          setUser({ token, ...userData });
-        })
-        .catch(() => {
-          // Nếu lỗi, xóa token và đăng xuất
+    const fetchUser = async () => {
+      const token = authAPI.getToken();
+      if (token) {
+        try {
+          // Lấy thông tin user từ API
+          const userData = await authAPI.getCurrentUser();
+          setUser({ ...userData });
+        } catch (error) {
+          // Nếu lỗi (token hết hạn hoặc không hợp lệ), xóa token
+          console.error('Failed to fetch user:', error);
           authAPI.logout();
           setUser(null);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else {
+        }
+      }
       setLoading(false);
-    }
+    };
+    
+    fetchUser();
   }, []);
 
   const login = async (email, password) => {
