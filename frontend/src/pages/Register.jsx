@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Register() {
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -18,8 +19,13 @@ export default function Register() {
     setError("");
 
     // Validation
-    if (!email || !password || !confirmPassword) {
+    if (!username || !email || !password || !confirmPassword) {
       setError("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+
+    if (username.length < 3) {
+      setError("Tên đăng nhập phải có ít nhất 3 ký tự");
       return;
     }
 
@@ -34,7 +40,7 @@ export default function Register() {
     }
 
     setLoading(true);
-    const result = await register(email, password);
+    const result = await register(username, email, password);
     setLoading(false);
 
     if (result.success) {
@@ -68,6 +74,21 @@ export default function Register() {
                   {error}
                 </div>
               )}
+
+              <div>
+                <label className="flex flex-col w-full">
+                  <p className="pb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Tên đăng nhập</p>
+                  <input
+                    className="form-input flex w-full flex-1 resize-none overflow-hidden rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 p-3 text-base font-normal text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    placeholder="Nhập tên đăng nhập của bạn (tối thiểu 3 ký tự)"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </label>
+              </div>
 
               <div>
                 <label className="flex flex-col w-full">

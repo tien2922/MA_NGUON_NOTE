@@ -38,9 +38,9 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (email, password) => {
+  const register = async (username, email, password) => {
     try {
-      await authAPI.register(email, password);
+      await authAPI.register(username, email, password);
       // Sau khi đăng ký thành công, tự động đăng nhập
       return await login(email, password);
     } catch (error) {

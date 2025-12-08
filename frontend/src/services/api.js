@@ -81,10 +81,10 @@ export const notesAPI = {
 // Auth API
 export const authAPI = {
   // Đăng ký
-  register: async (email, password) => {
+  register: async (username, email, password) => {
     return apiRequest('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ username, email, password }),
     });
   },
 
