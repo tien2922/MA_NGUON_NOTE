@@ -38,7 +38,7 @@ export default function Register() {
     setLoading(false);
 
     if (result.success) {
-      navigate("/"); // Chuyển về trang chủ sau khi đăng ký thành công
+      navigate("/dashboard"); // Chuyển đến dashboard sau khi đăng ký thành công
     } else {
       setError(result.error || "Đăng ký thất bại. Vui lòng thử lại.");
     }

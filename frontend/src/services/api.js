@@ -41,6 +41,43 @@ const apiRequest = async (endpoint, options = {}) => {
   return response.json();
 };
 
+// Notes API
+export const notesAPI = {
+  // Lấy danh sách notes
+  getNotes: async (folderId = null) => {
+    const url = folderId ? `/notes?folder_id=${folderId}` : '/notes';
+    return apiRequest(url);
+  },
+
+  // Lấy chi tiết note
+  getNote: async (noteId) => {
+    return apiRequest(`/notes/${noteId}`);
+  },
+
+  // Tạo note mới
+  createNote: async (noteData) => {
+    return apiRequest('/notes', {
+      method: 'POST',
+      body: JSON.stringify(noteData),
+    });
+  },
+
+  // Cập nhật note
+  updateNote: async (noteId, noteData) => {
+    return apiRequest(`/notes/${noteId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(noteData),
+    });
+  },
+
+  // Xóa note
+  deleteNote: async (noteId) => {
+    return apiRequest(`/notes/${noteId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 // Auth API
 export const authAPI = {
   // Đăng ký

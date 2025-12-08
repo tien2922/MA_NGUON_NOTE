@@ -26,7 +26,7 @@ export default function Login() {
     setLoading(false);
 
     if (result.success) {
-      navigate("/"); // Chuyển về trang chủ sau khi đăng nhập thành công
+      navigate("/dashboard"); // Chuyển đến dashboard sau khi đăng nhập thành công
     } else {
       setError(result.error || "Đăng nhập thất bại. Vui lòng thử lại.");
     }
