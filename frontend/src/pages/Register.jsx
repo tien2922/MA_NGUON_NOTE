@@ -57,7 +57,7 @@ export default function Register() {
           <div className="text-center">
             <div className="flex justify-center items-center gap-3 mb-4">
               <span className="material-symbols-outlined text-primary text-4xl">edit_note</span>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">SmartNote</h1>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Chí Tường Smart</h1>
             </div>
             <div className="flex flex-col gap-3">
               <p className="text-3xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white">Tạo tài khoản mới</p>
