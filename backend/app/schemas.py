@@ -68,6 +68,8 @@ class NoteBase(BaseModel):
     folder_id: Optional[int] = None
     tag_ids: List[int] = Field(default_factory=list)
     is_public: bool = False
+    color: Optional[str] = None
+    image_url: Optional[str] = None
 
 
 class NoteCreate(NoteBase):
@@ -88,6 +90,7 @@ class NoteOut(NoteBase):
     created_at: datetime
     updated_at: datetime
     tags: List[TagOut] = Field(default_factory=list)
+    deleted_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 

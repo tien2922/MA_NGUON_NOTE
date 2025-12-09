@@ -57,6 +57,9 @@ class Note(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     is_public: Mapped[bool] = mapped_column(Boolean, default=False)
+    color: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     search_vector: Mapped[str] = mapped_column(
         TSVECTOR,
         Computed("to_tsvector('english', coalesce(title,'') || ' ' || coalesce(content,''))", persisted=True),

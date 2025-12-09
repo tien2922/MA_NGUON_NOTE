@@ -61,6 +61,11 @@ export const notesAPI = {
     return apiRequest(url);
   },
 
+  // Lấy thùng rác
+  getTrash: async () => {
+    return apiRequest('/notes/trash');
+  },
+
   // Lấy chi tiết note
   getNote: async (noteId) => {
     return apiRequest(`/notes/${noteId}`);
@@ -88,6 +93,44 @@ export const notesAPI = {
       method: 'DELETE',
     });
     return result; // Có thể là null nếu 204
+  },
+
+  // Khôi phục note từ thùng rác
+  restoreNote: async (noteId) => {
+    return apiRequest(`/notes/${noteId}/restore`, {
+      method: 'POST',
+    });
+  },
+
+  // Xóa vĩnh viễn note trong thùng rác
+  forceDeleteNote: async (noteId) => {
+    return apiRequest(`/notes/${noteId}/force`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Upload ảnh cho ghi chú
+  uploadImage: async (file) => {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_URL}/notes/upload`, {
+      method: 'POST',
+      headers: token
+        ? {
+            Authorization: `Bearer ${token}`,
+          }
+        : {},
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Có lỗi khi upload ảnh' }));
+      throw new Error(error.detail || 'Có lỗi khi upload ảnh');
+    }
+
+    return response.json();
   },
 };
 

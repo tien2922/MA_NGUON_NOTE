@@ -1,17 +1,24 @@
 import { useState, useEffect } from "react";
 
-export default function NoteEditor({ note, onSave, onClose }) {
+export default function NoteEditor({ note, onSave, onClose, onUploadImage }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [color, setColor] = useState("#ffffff");
+  const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (note) {
       setTitle(note.title || "");
       setContent(note.content || "");
+      setColor(note.color || "#ffffff");
+      setImageUrl(note.image_url || "");
     } else {
       setTitle("");
       setContent("");
+      setColor("#ffffff");
+      setImageUrl("");
     }
   }, [note]);
 
@@ -31,9 +38,24 @@ export default function NoteEditor({ note, onSave, onClose }) {
         folder_id: null,
         tag_ids: [],
         is_public: false,
+        color,
+        image_url: imageUrl || null,
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpload = async (file) => {
+    if (!file) return;
+    try {
+      setUploading(true);
+      const { url } = await onUploadImage(file);
+      setImageUrl(url);
+    } catch (err) {
+      alert("Upload ảnh thất bại: " + err.message);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -83,6 +105,63 @@ export default function NoteEditor({ note, onSave, onClose }) {
                 disabled={loading}
               />
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark">
+                  Màu ghi chú
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    disabled={loading}
+                    className="h-10 w-16 rounded cursor-pointer border border-gray-300 dark:border-gray-700"
+                  />
+                  <input
+                    type="text"
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    disabled={loading}
+                    className="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 text-text-primary-light dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="#ffffff"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark">
+                  Ảnh đính kèm (tùy chọn)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={loading || uploading}
+                    onChange={(e) => handleUpload(e.target.files?.[0])}
+                    className="flex-1 text-sm"
+                  />
+                </div>
+                {uploading && (
+                  <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                    Đang tải ảnh...
+                  </p>
+                )}
+                {imageUrl && (
+                  <div className="mt-2">
+                    <img
+                      src={imageUrl}
+                      alt="Ảnh ghi chú"
+                      className="max-h-40 rounded-lg border border-gray-200 dark:border-gray-700"
+                    />
+                    <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark break-all mt-1">
+                      {imageUrl}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Footer */}
@@ -90,17 +169,17 @@ export default function NoteEditor({ note, onSave, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              disabled={loading}
+              disabled={loading || uploading}
               className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-text-primary-light dark:text-text-primary-dark hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
             >
               Hủy
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || uploading}
               className="px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50"
             >
-              {loading ? "Đang lưu..." : "Lưu"}
+              {loading || uploading ? "Đang xử lý..." : "Lưu"}
             </button>
           </div>
         </form>

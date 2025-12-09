@@ -10,6 +10,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
+  const [view, setView] = useState("all"); // all | trash
   const { logout, isAuthenticated, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -21,13 +22,13 @@ export default function Dashboard() {
       navigate("/dangnhap");
       return;
     }
-    fetchNotes();
-  }, [isAuthenticated, authLoading, navigate]);
+    fetchNotes(view);
+  }, [isAuthenticated, authLoading, navigate, view]);
 
-  const fetchNotes = async () => {
+  const fetchNotes = async (mode = "all") => {
     try {
       setLoading(true);
-      const data = await notesAPI.getNotes();
+      const data = mode === "trash" ? await notesAPI.getTrash() : await notesAPI.getNotes();
       setNotes(data);
     } catch (error) {
       console.error("Error fetching notes:", error);
@@ -84,14 +85,26 @@ export default function Dashboard() {
   };
 
   const handleDeleteNote = async (noteId) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa ghi chú này?")) {
+    if (window.confirm(view === "trash" ? "Xóa vĩnh viễn ghi chú này?" : "Chuyển ghi chú vào thùng rác?")) {
       try {
-        await notesAPI.deleteNote(noteId);
-        // Refresh danh sách notes
-        await fetchNotes();
+        if (view === "trash") {
+          await notesAPI.forceDeleteNote(noteId);
+        } else {
+          await notesAPI.deleteNote(noteId);
+        }
+        await fetchNotes(view);
       } catch (error) {
         alert("Lỗi khi xóa ghi chú: " + error.message);
       }
+    }
+  };
+
+  const handleRestoreNote = async (noteId) => {
+    try {
+      await notesAPI.restoreNote(noteId);
+      await fetchNotes(view);
+    } catch (error) {
+      alert("Lỗi khi khôi phục ghi chú: " + error.message);
     }
   };
 
@@ -105,7 +118,7 @@ export default function Dashboard() {
         await notesAPI.createNote(noteData);
       }
       // Refresh danh sách notes
-      await fetchNotes();
+      await fetchNotes(view);
       setShowNoteEditor(false);
       setEditingNote(null);
     } catch (error) {
@@ -134,10 +147,13 @@ export default function Dashboard() {
             </div>
             <div className="flex flex-col gap-1">
               <a
-                className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary"
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                  view === "all" ? "bg-primary/10 text-primary" : "text-text-secondary-light dark:text-text-secondary-dark hover:bg-primary/10 hover:text-primary transition-colors"
+                }`}
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
+                  setView("all");
                   setSearchQuery("");
                 }}
               >
@@ -156,11 +172,13 @@ export default function Dashboard() {
                 <p className="text-sm font-medium leading-normal">Thêm ghi chú mới</p>
               </a>
               <a
-                className="flex items-center gap-3 px-3 py-2 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-primary/10 hover:text-primary transition-colors"
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                  view === "trash" ? "bg-primary/10 text-primary" : "text-text-secondary-light dark:text-text-secondary-dark hover:bg-primary/10 hover:text-primary transition-colors"
+                }`}
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  // TODO: Navigate to trash
+                  setView("trash");
                 }}
               >
                 <span className="material-symbols-outlined">delete</span>
@@ -220,7 +238,7 @@ export default function Dashboard() {
 
             {/* SectionHeader */}
             <h2 className="text-text-primary-light dark:text-text-primary-dark text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">
-              Ghi chú gần đây
+              {view === "trash" ? "Thùng rác" : "Ghi chú gần đây"}
             </h2>
 
             {/* Cards Grid */}
@@ -233,10 +251,14 @@ export default function Dashboard() {
                 <span className="material-symbols-outlined text-6xl text-text-secondary-light dark:text-text-secondary-dark">
                   note_add
                 </span>
-                <p className="text-text-secondary-light dark:text-text-secondary-dark text-lg">
-                  {searchQuery ? "Không tìm thấy ghi chú nào" : "Chưa có ghi chú nào. Tạo ghi chú đầu tiên của bạn!"}
+                <p className="text-text-secondary-light dark:text-text-secondary-dark text-lg text-center px-4">
+                  {view === "trash"
+                    ? "Thùng rác trống."
+                    : searchQuery
+                    ? "Không tìm thấy ghi chú nào"
+                    : "Chưa có ghi chú nào. Tạo ghi chú đầu tiên của bạn!"}
                 </p>
-                {!searchQuery && (
+                {view !== "trash" && !searchQuery && (
                   <button
                     className="flex cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors"
                     onClick={handleCreateNote}
@@ -249,11 +271,21 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 gap-6">
                 {filteredNotes.map((note) => (
                   <div key={note.id} className="w-full @container">
-                    <div className="flex flex-col items-stretch justify-start rounded-lg bg-card-light dark:bg-card-dark shadow-sm transition-shadow hover:shadow-md @xl:flex-row @xl:items-start p-4">
+                    <div
+                      className="flex flex-col items-stretch justify-start rounded-lg shadow-sm transition-shadow hover:shadow-md @xl:flex-row @xl:items-start p-4"
+                      style={{ backgroundColor: note.color || undefined }}
+                    >
                       <div className="flex w-full min-w-0 grow flex-col items-stretch justify-center gap-2">
                         <p className="text-text-primary-light dark:text-text-primary-dark text-lg font-bold leading-tight tracking-[-0.015em]">
                           {note.title}
                         </p>
+                        {note.image_url && (
+                          <img
+                            src={note.image_url}
+                            alt="Ảnh ghi chú"
+                            className="max-h-48 rounded-lg border border-gray-200 dark:border-gray-700 object-cover"
+                          />
+                        )}
                         <div className="flex items-end gap-3 justify-between">
                           <div className="flex flex-col gap-1">
                             <p className="text-text-secondary-light dark:text-text-secondary-dark text-base font-normal leading-normal line-clamp-2">
@@ -263,20 +295,37 @@ export default function Dashboard() {
                               {formatTimeAgo(note.updated_at)}
                             </p>
                           </div>
-                          <div className="flex gap-2">
-                            <button
-                              className="flex shrink-0 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 transition-colors"
-                              onClick={() => handleViewNote(note.id)}
-                            >
-                              <span className="truncate">Sửa</span>
-                            </button>
-                            <button
-                              className="flex shrink-0 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-red-500 text-white text-sm font-medium leading-normal hover:bg-red-600 transition-colors"
-                              onClick={() => handleDeleteNote(note.id)}
-                            >
-                              <span className="truncate">Xóa</span>
-                            </button>
-                          </div>
+                          {view === "trash" ? (
+                            <div className="flex gap-2">
+                              <button
+                                className="flex shrink-0 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 transition-colors"
+                                onClick={() => handleRestoreNote(note.id)}
+                              >
+                                <span className="truncate">Khôi phục</span>
+                              </button>
+                              <button
+                                className="flex shrink-0 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-red-500 text-white text-sm font-medium leading-normal hover:bg-red-600 transition-colors"
+                                onClick={() => handleDeleteNote(note.id)}
+                              >
+                                <span className="truncate">Xóa vĩnh viễn</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <button
+                                className="flex shrink-0 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 transition-colors"
+                                onClick={() => handleViewNote(note.id)}
+                              >
+                                <span className="truncate">Sửa</span>
+                              </button>
+                              <button
+                                className="flex shrink-0 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-red-500 text-white text-sm font-medium leading-normal hover:bg-red-600 transition-colors"
+                                onClick={() => handleDeleteNote(note.id)}
+                              >
+                                <span className="truncate">Xóa</span>
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -297,6 +346,7 @@ export default function Dashboard() {
             setShowNoteEditor(false);
             setEditingNote(null);
           }}
+          onUploadImage={notesAPI.uploadImage}
         />
       )}
     </div>

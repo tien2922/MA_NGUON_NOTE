@@ -16,6 +16,35 @@ async def fix_database():
         
         # Tạo tất cả các bảng
         await conn.run_sync(Base.metadata.create_all)
+
+        # Đảm bảo thêm các cột mới nếu chưa có
+        print("🔧 Đang kiểm tra và thêm cột mới cho bảng notes (color, image_url, deleted_at)...")
+        await conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'notes' AND column_name = 'color'
+                ) THEN
+                    ALTER TABLE notes ADD COLUMN color VARCHAR(20);
+                END IF;
+
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'notes' AND column_name = 'image_url'
+                ) THEN
+                    ALTER TABLE notes ADD COLUMN image_url VARCHAR(500);
+                END IF;
+
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name = 'notes' AND column_name = 'deleted_at'
+                ) THEN
+                    ALTER TABLE notes ADD COLUMN deleted_at TIMESTAMPTZ;
+                END IF;
+            END;
+            $$;
+        """))
         
         # Fix updated_at trigger nếu cần
         print("🔧 Đang kiểm tra trigger updated_at...")
