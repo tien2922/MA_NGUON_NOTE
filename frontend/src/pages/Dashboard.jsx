@@ -272,7 +272,7 @@ export default function Dashboard() {
                 {filteredNotes.map((note) => (
                   <div key={note.id} className="w-full @container">
                     <div
-                      className="flex flex-col items-stretch justify-start rounded-lg shadow-sm transition-shadow hover:shadow-md @xl:flex-row @xl:items-start p-4"
+                      className="relative flex flex-col items-stretch justify-start rounded-lg shadow-sm transition-shadow hover:shadow-md @xl:flex-row @xl:items-start p-4"
                       style={{ backgroundColor: note.color || undefined }}
                     >
                       <div className="flex w-full min-w-0 grow flex-col items-stretch justify-center gap-2">
@@ -283,7 +283,7 @@ export default function Dashboard() {
                           <img
                             src={note.image_url}
                             alt="Ảnh ghi chú"
-                            className="max-h-48 rounded-lg border border-gray-200 dark:border-gray-700 object-cover"
+                            className="absolute top-3 right-3 h-12 w-12 rounded-lg border border-gray-200 dark:border-gray-700 object-cover"
                           />
                         )}
                         <div className="flex items-end gap-3 justify-between">
