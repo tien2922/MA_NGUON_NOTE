@@ -151,9 +151,9 @@ export const authAPI = {
   },
 
   // Đăng nhập
-  login: async (email, password) => {
+  login: async (identifier, password) => {
     const formData = new URLSearchParams();
-    formData.append('username', email); // OAuth2PasswordRequestForm dùng 'username'
+    formData.append('username', identifier); // OAuth2PasswordRequestForm dùng 'username'
     formData.append('password', password);
 
     const response = await fetch(`${API_URL}/auth/token`, {
