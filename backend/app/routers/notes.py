@@ -87,8 +87,13 @@ async def create_note(
     )
     session.add(note)
     await session.commit()
-    await session.refresh(note)
-    return note
+    # Reload with relationships to avoid lazy load in response (async safe)
+    result = await session.execute(
+        select(Note)
+        .where(Note.id == note.id)
+        .options(selectinload(Note.tags), selectinload(Note.folder))
+    )
+    return result.scalar_one()
 
 
 @router.patch("/{note_id}", response_model=schemas.NoteOut)
@@ -118,8 +123,13 @@ async def update_note(
 
     session.add(note)
     await session.commit()
-    await session.refresh(note)
-    return note
+    # Reload with relationships to avoid lazy load in response (async safe)
+    result = await session.execute(
+        select(Note)
+        .where(Note.id == note.id)
+        .options(selectinload(Note.tags), selectinload(Note.folder))
+    )
+    return result.scalar_one()
 
 
 @router.delete("/{note_id}", status_code=status.HTTP_204_NO_CONTENT)
