@@ -1,5 +1,11 @@
 // API base URL - có thể thay đổi khi deploy
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+// Helper build absolute URL for file paths returned by backend (e.g. /uploads/xxx.png)
+export const buildFileUrl = (path) => {
+  if (!path) return null;
+  return path.startsWith('http') ? path : `${API_URL}${path}`;
+};
 
 // Helper function để lấy token từ localStorage
 const getToken = () => {

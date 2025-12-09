@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { notesAPI } from "../services/api";
+import { notesAPI, buildFileUrl } from "../services/api";
 import NoteEditor from "../components/NoteEditor";
 
 export default function Dashboard() {
@@ -283,7 +283,7 @@ export default function Dashboard() {
                       <div className="h-20 w-20 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white/60 dark:bg-gray-800/60 flex items-center justify-center">
                         {note.image_url ? (
                           <img
-                            src={note.image_url}
+                            src={buildFileUrl(note.image_url)}
                             alt="Ảnh ghi chú"
                             className="h-full w-full object-cover"
                           />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { buildFileUrl } from "../services/api";
 
 export default function NoteEditor({ note, onSave, onClose, onUploadImage }) {
   const [title, setTitle] = useState("");
@@ -151,7 +152,7 @@ export default function NoteEditor({ note, onSave, onClose, onUploadImage }) {
                 {imageUrl && (
                   <div className="mt-2">
                     <img
-                      src={imageUrl}
+                      src={buildFileUrl(imageUrl)}
                       alt="Ảnh ghi chú"
                       className="max-h-40 rounded-lg border border-gray-200 dark:border-gray-700"
                     />
