@@ -63,6 +63,11 @@ export default function Dashboard() {
     }
   };
 
+  const formatDateDisplay = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("vi-VN");
+  };
+
   // Tìm kiếm notes
   const filteredNotes = searchQuery
     ? notes.filter((note) =>
@@ -272,62 +277,66 @@ export default function Dashboard() {
                 {filteredNotes.map((note) => (
                   <div key={note.id} className="w-full @container">
                     <div
-                      className="relative flex flex-col items-stretch justify-start rounded-lg shadow-sm transition-shadow hover:shadow-md @xl:flex-row @xl:items-start p-4"
+                      className="relative flex items-start gap-4 rounded-lg shadow-sm transition-shadow hover:shadow-md p-4 bg-card-light dark:bg-card-dark"
                       style={{ backgroundColor: note.color || undefined }}
                     >
-                      <div className="flex w-full min-w-0 grow flex-col items-stretch justify-center gap-2">
-                        <p className="text-text-primary-light dark:text-text-primary-dark text-lg font-bold leading-tight tracking-[-0.015em]">
-                          {note.title}
-                        </p>
-                        {note.image_url && (
+                      <div className="h-20 w-20 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white/60 dark:bg-gray-800/60 flex items-center justify-center">
+                        {note.image_url ? (
                           <img
                             src={note.image_url}
                             alt="Ảnh ghi chú"
-                            className="absolute top-3 right-3 h-12 w-12 rounded-lg border border-gray-200 dark:border-gray-700 object-cover"
+                            className="h-full w-full object-cover"
                           />
+                        ) : (
+                          <span className="text-text-secondary-light dark:text-text-secondary-dark text-sm">
+                            Ảnh
+                          </span>
                         )}
-                        <div className="flex items-end gap-3 justify-between">
-                          <div className="flex flex-col gap-1">
-                            <p className="text-text-secondary-light dark:text-text-secondary-dark text-base font-normal leading-normal line-clamp-2">
-                              {note.content || "Không có nội dung"}
-                            </p>
-                            <p className="text-text-secondary-light dark:text-text-secondary-dark text-sm font-normal leading-normal">
-                              {formatTimeAgo(note.updated_at)}
-                            </p>
-                          </div>
-                          {view === "trash" ? (
-                            <div className="flex gap-2">
-                              <button
-                                className="flex shrink-0 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 transition-colors"
-                                onClick={() => handleRestoreNote(note.id)}
-                              >
-                                <span className="truncate">Khôi phục</span>
-                              </button>
-                              <button
-                                className="flex shrink-0 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-red-500 text-white text-sm font-medium leading-normal hover:bg-red-600 transition-colors"
-                                onClick={() => handleDeleteNote(note.id)}
-                              >
-                                <span className="truncate">Xóa vĩnh viễn</span>
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex gap-2">
-                              <button
-                                className="flex shrink-0 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 transition-colors"
-                                onClick={() => handleViewNote(note.id)}
-                              >
-                                <span className="truncate">Sửa</span>
-                              </button>
-                              <button
-                                className="flex shrink-0 min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-red-500 text-white text-sm font-medium leading-normal hover:bg-red-600 transition-colors"
-                                onClick={() => handleDeleteNote(note.id)}
-                              >
-                                <span className="truncate">Xóa</span>
-                              </button>
-                            </div>
-                          )}
-                        </div>
                       </div>
+
+                      <div className="flex-1 min-w-0 flex flex-col gap-2">
+                        <p className="text-text-primary-light dark:text-text-primary-dark text-lg font-bold leading-tight tracking-[-0.015em]">
+                          {note.title}
+                        </p>
+                        <p className="text-text-secondary-light dark:text-text-secondary-dark text-sm leading-normal line-clamp-2">
+                          {note.content || "Không có nội dung"}
+                        </p>
+                        <p className="text-text-secondary-light dark:text-text-secondary-dark text-xs">
+                          Cập nhật: {formatDateDisplay(note.updated_at)}
+                        </p>
+                      </div>
+
+                      {view === "trash" ? (
+                        <div className="flex flex-col gap-2 items-end">
+                          <button
+                            className="flex cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 transition-colors"
+                            onClick={() => handleRestoreNote(note.id)}
+                          >
+                            <span className="truncate">Khôi phục</span>
+                          </button>
+                          <button
+                            className="flex cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-red-500 text-white text-sm font-medium leading-normal hover:bg-red-600 transition-colors"
+                            onClick={() => handleDeleteNote(note.id)}
+                          >
+                            <span className="truncate">Xóa vĩnh viễn</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2 items-end">
+                          <button
+                            className="flex cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 transition-colors"
+                            onClick={() => handleViewNote(note.id)}
+                          >
+                            <span className="truncate">Sửa</span>
+                          </button>
+                          <button
+                            className="flex cursor-pointer items-center justify-center overflow-hidden rounded-lg h-8 px-4 bg-red-500 text-white text-sm font-medium leading-normal hover:bg-red-600 transition-colors"
+                            onClick={() => handleDeleteNote(note.id)}
+                          >
+                            <span className="truncate">Xóa</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
