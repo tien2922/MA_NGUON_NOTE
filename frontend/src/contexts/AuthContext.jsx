@@ -39,9 +39,9 @@ export const AuthProvider = ({ children }) => {
     fetchUser();
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (identifier, password) => {
     try {
-      const data = await authAPI.login(email, password);
+      const data = await authAPI.login(identifier, password);
       // Lấy thông tin user sau khi đăng nhập
       const userData = await authAPI.getCurrentUser();
       setUser({ token: data.access_token, ...userData });

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -16,13 +16,13 @@ export default function Login() {
     setError("");
     setLoading(true);
 
-    if (!email || !password) {
-      setError("Vui lòng nhập đầy đủ email và mật khẩu");
+    if (!identifier || !password) {
+      setError("Vui lòng nhập email hoặc tên đăng nhập và mật khẩu");
       setLoading(false);
       return;
     }
 
-    const result = await login(email, password);
+    const result = await login(identifier, password);
     setLoading(false);
 
     if (result.success) {
@@ -55,14 +55,14 @@ export default function Login() {
                 </div>
               )}
               <label className="flex flex-col min-w-40 flex-1">
-                <p className="text-slate-900 dark:text-white text-base font-medium leading-normal pb-2">Email</p>
+                <p className="text-slate-900 dark:text-white text-base font-medium leading-normal pb-2">Email hoặc tên đăng nhập</p>
                 <div className="flex w-full flex-1 items-stretch rounded-lg">
                   <input
                     className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-slate-300 dark:border-[#324467] bg-white dark:bg-[#192233] focus:border-primary dark:focus:border-primary h-14 placeholder:text-slate-400 dark:placeholder:text-[#92a4c9] p-[15px] rounded-r-none border-r-0 pr-2 text-base font-normal leading-normal"
-                    placeholder="Nhập email của bạn"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Nhập email hoặc tên đăng nhập của bạn"
+                    type="text"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
                     required
                     disabled={loading}
                   />
