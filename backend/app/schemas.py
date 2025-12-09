@@ -83,6 +83,8 @@ class NoteUpdate(BaseModel):
     folder_id: Optional[int] = None
     tag_ids: Optional[List[int]] = None
     is_public: Optional[bool] = None
+    color: Optional[str] = None
+    image_url: Optional[str] = None
 
 
 class NoteOut(NoteBase):
