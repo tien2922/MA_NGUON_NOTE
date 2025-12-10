@@ -18,6 +18,7 @@ export default function Dashboard() {
     noteId: null,
     mode: "trash", // trash | delete
   });
+  const [toast, setToast] = useState({ open: false, type: "success", message: "" });
   const { logout, isAuthenticated, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -43,6 +44,8 @@ export default function Dashboard() {
       if (error.message.includes("401") || error.message.includes("Unauthorized")) {
         logout();
         navigate("/dangnhap");
+      } else {
+        setToast({ open: true, type: "error", message: "Không tải được ghi chú" });
       }
     } finally {
       setLoading(false);
@@ -127,8 +130,13 @@ export default function Dashboard() {
         await notesAPI.deleteNote(confirmModal.noteId);
       }
       await fetchNotes(view);
+      setToast({
+        open: true,
+        type: "success",
+        message: confirmModal.mode === "delete" ? "Đã xóa vĩnh viễn" : "Đã chuyển vào thùng rác",
+      });
     } catch (error) {
-      alert("Lỗi khi xóa ghi chú: " + error.message);
+      setToast({ open: true, type: "error", message: "Lỗi khi xóa ghi chú" });
     } finally {
       setConfirmModal({ open: false, noteId: null, mode: "trash" });
     }
@@ -138,8 +146,9 @@ export default function Dashboard() {
     try {
       await notesAPI.restoreNote(noteId);
       await fetchNotes(view);
+      setToast({ open: true, type: "success", message: "Đã khôi phục ghi chú" });
     } catch (error) {
-      alert("Lỗi khi khôi phục ghi chú: " + error.message);
+      setToast({ open: true, type: "error", message: "Lỗi khi khôi phục ghi chú" });
     }
   };
 
@@ -156,8 +165,13 @@ export default function Dashboard() {
       await fetchNotes(view);
       setShowNoteEditor(false);
       setEditingNote(null);
+      setToast({
+        open: true,
+        type: "success",
+        message: editingNote ? "Đã cập nhật ghi chú" : "Đã tạo ghi chú",
+      });
     } catch (error) {
-      alert("Lỗi khi lưu ghi chú: " + error.message);
+      setToast({ open: true, type: "error", message: "Lỗi khi lưu ghi chú" });
     }
   };
 
@@ -166,7 +180,7 @@ export default function Dashboard() {
       await notesAPI.updateNote(noteId, { is_pinned: !currentPinned });
       await fetchNotes(view);
     } catch (error) {
-      alert("Lỗi khi ghim ghi chú: " + error.message);
+      setToast({ open: true, type: "error", message: "Lỗi khi ghim/bỏ ghim" });
     }
   };
 
@@ -534,6 +548,34 @@ export default function Dashboard() {
                 {confirmModal.mode === "delete" ? "Xóa vĩnh viễn" : "Chuyển vào thùng rác"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {toast.open && (
+        <div className="fixed top-4 right-4 z-50">
+          <div
+            className={`min-w-[260px] max-w-sm rounded-lg px-4 py-3 shadow-xl border text-sm font-medium flex items-start gap-3 ${
+              toast.type === "success"
+                ? "bg-green-50 text-green-800 border-green-200"
+                : "bg-red-50 text-red-800 border-red-200"
+            }`}
+          >
+            <div
+              className={`h-8 w-8 rounded-full flex items-center justify-center ${
+                toast.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">
+                {toast.type === "success" ? "check_circle" : "error"}
+              </span>
+            </div>
+            <div className="flex-1 leading-snug">{toast.message}</div>
+            <button
+              className="text-text-secondary-light hover:text-text-primary-light"
+              onClick={() => setToast({ ...toast, open: false })}
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
           </div>
         </div>
       )}
