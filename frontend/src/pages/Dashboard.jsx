@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [view, setView] = useState("all"); // all | trash
   const [sortBy, setSortBy] = useState("recent"); // recent | title
   const [hasImageOnly, setHasImageOnly] = useState(false);
+  const [pinFilter, setPinFilter] = useState("all"); // all | pinned | unpinned
   const [confirmModal, setConfirmModal] = useState({
     open: false,
     noteId: null,
@@ -86,7 +87,9 @@ export default function Dashboard() {
         note.title.toLowerCase().includes(lower) ||
         note.content.toLowerCase().includes(lower);
       const imageOk = hasImageOnly ? !!note.image_url : true;
-      return match && imageOk;
+      const pinOk =
+        pinFilter === "all" ? true : pinFilter === "pinned" ? note.is_pinned : !note.is_pinned;
+      return match && imageOk && pinOk;
     });
 
     if (sortBy === "title") {
@@ -186,9 +189,9 @@ export default function Dashboard() {
 
   return (
     <div className="font-display bg-background-light dark:bg-background-dark min-h-screen text-text-primary-light dark:text-text-primary-dark">
-      <div className="grid grid-cols-1 lg:grid-cols-[260px,1fr] h-screen">
+      <div className="grid grid-cols-1 lg:grid-cols-[260px,1fr] h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950">
         {/* SideNavBar */}
-        <aside className="flex h-full flex-col bg-card-light/70 dark:bg-card-dark/80 backdrop-blur p-4 border-r border-gray-200 dark:border-gray-800">
+        <aside className="flex h-full flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur p-4 border-r border-gray-200 dark:border-gray-800">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3 px-3 pt-2">
               <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
@@ -281,78 +284,96 @@ export default function Dashboard() {
         <main className="flex-1 overflow-y-auto p-5 lg:p-8">
           <div className="mx-auto max-w-6xl flex flex-col gap-6">
             {/* Top bar */}
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="space-y-1">
-                <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                  Trang tổng quan
-                </p>
-                <h2 className="text-2xl font-bold text-text-primary-light dark:text-text-primary-dark">
-                  {view === "trash" ? "Thùng rác" : "Ghi chú của bạn"}
-                </h2>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                <div className="flex items-center gap-2 bg-card-light dark:bg-card-dark rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2">
-                  <span className="material-symbols-outlined text-text-secondary-light dark:text-text-secondary-dark">
-                    filter_alt
-                  </span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="bg-transparent text-sm text-text-primary-light dark:text-text-primary-dark focus:outline-none"
-                  >
-                    <option value="recent">Mới cập nhật</option>
-                    <option value="title">Tiêu đề (A-Z)</option>
-                  </select>
-                  <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
-                  <label className="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="accent-primary"
-                      checked={hasImageOnly}
-                      onChange={(e) => setHasImageOnly(e.target.checked)}
-                    />
-                    Chỉ ghi chú có ảnh
-                  </label>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                    Trang tổng quan
+                  </p>
+                  <h2 className="text-2xl font-bold text-text-primary-light dark:text-text-primary-dark">
+                    {view === "trash" ? "Thùng rác" : "Ghi chú của bạn"}
+                  </h2>
                 </div>
-                <button
-                  className="flex items-center justify-center gap-2 rounded-lg bg-primary text-white px-4 h-11 font-semibold shadow-sm hover:bg-primary/90 transition"
-                  onClick={handleCreateNote}
-                >
-                  <span className="material-symbols-outlined">add</span>
-                  Tạo ghi chú
-                </button>
-              </div>
-            </div>
-
-            {/* SearchBar + stats */}
-            <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
-              <label className="flex flex-col min-w-40 h-12 w-full">
-                <div className="flex w-full flex-1 items-stretch rounded-lg h-full bg-card-light dark:bg-card-dark border border-gray-200 dark:border-gray-700 shadow-sm">
-                  <div className="text-text-secondary-light dark:text-text-secondary-dark flex items-center justify-center pl-4 pr-2">
-                    <span className="material-symbols-outlined">search</span>
+                <div className="flex flex-wrap gap-2 items-center">
+                  <div className="flex items-center gap-3 bg-card-light dark:bg-card-dark rounded-full border border-gray-200 dark:border-gray-700 px-4 py-2 shadow-sm">
+                    <span className="material-symbols-outlined text-text-secondary-light dark:text-text-secondary-dark">
+                      filter_alt
+                    </span>
+                    <div className="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                      <span className="text-text-primary-light dark:text-text-primary-dark font-medium">Sắp xếp</span>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="bg-transparent text-sm text-text-primary-light dark:text-text-primary-dark focus:outline-none"
+                      >
+                        <option value="recent">Mới cập nhật</option>
+                        <option value="title">Tiêu đề (A-Z)</option>
+                      </select>
+                    </div>
+                    <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
+                    <label className="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="accent-primary"
+                        checked={hasImageOnly}
+                        onChange={(e) => setHasImageOnly(e.target.checked)}
+                      />
+                      Có ảnh
+                    </label>
+                    <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
+                    <div className="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                      <span className="text-text-primary-light dark:text-text-primary-dark font-medium">Ghim</span>
+                      <select
+                        value={pinFilter}
+                        onChange={(e) => setPinFilter(e.target.value)}
+                        className="bg-transparent text-sm text-text-primary-light dark:text-text-primary-dark focus:outline-none"
+                      >
+                        <option value="all">Tất cả</option>
+                        <option value="pinned">Chỉ ghim</option>
+                        <option value="unpinned">Không ghim</option>
+                      </select>
+                    </div>
                   </div>
-                  <input
-                    className="flex w-full min-w-0 flex-1 rounded-r-lg text-text-primary-light dark:text-text-primary-dark focus:outline-0 focus:ring-2 focus:ring-primary/40 border-none bg-transparent h-full placeholder:text-text-secondary-light placeholder:dark:text-text-secondary-dark px-4 text-base"
-                    placeholder="Tìm kiếm tiêu đề hoặc nội dung..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
+                  <button
+                    className="flex items-center justify-center gap-2 rounded-full bg-primary text-white px-4 h-11 font-semibold shadow-sm hover:bg-primary/90 transition"
+                    onClick={handleCreateNote}
+                  >
+                    <span className="material-symbols-outlined">add</span>
+                    Tạo ghi chú
+                  </button>
                 </div>
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg bg-gradient-to-br from-primary/90 to-primary text-white px-4 py-3 shadow-sm">
-                  <p className="text-xs opacity-90">Tổng ghi chú</p>
-                  <p className="text-xl font-bold">{notes.length}</p>
-                  <p className="text-xs opacity-80 mt-1">({filteredNotes.length} kết quả lọc)</p>
-                </div>
-                <div className="rounded-lg bg-card-light dark:bg-card-dark border border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm">
-                  <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark">Chế độ</p>
-                  <p className="text-lg font-semibold text-text-primary-light dark:text-text-primary-dark mt-1">
-                    {view === "trash" ? "Thùng rác" : "Đang xem tất cả"}
-                  </p>
-                  <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
-                    Cập nhật tự động khi thay đổi
-                  </p>
+              </div>
+
+              {/* Search + stats */}
+              <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
+                <label className="flex flex-col min-w-40 h-12 w-full">
+                  <div className="flex w-full flex-1 items-stretch rounded-full h-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 shadow-sm px-2">
+                    <div className="text-text-secondary-light dark:text-text-secondary-dark flex items-center justify-center pl-2 pr-1">
+                      <span className="material-symbols-outlined">search</span>
+                    </div>
+                    <input
+                      className="flex w-full min-w-0 flex-1 rounded-full text-text-primary-light dark:text-text-primary-dark focus:outline-0 focus:ring-2 focus:ring-primary/40 border-none bg-transparent h-full placeholder:text-text-secondary-light placeholder:dark:text-text-secondary-dark px-3 text-base"
+                      placeholder="Tìm kiếm tiêu đề hoặc nội dung..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg bg-gradient-to-br from-primary/90 to-primary text-white px-4 py-3 shadow-sm">
+                    <p className="text-xs opacity-90">Tổng ghi chú</p>
+                    <p className="text-xl font-bold">{notes.length}</p>
+                    <p className="text-xs opacity-80 mt-1">({filteredNotes.length} kết quả lọc)</p>
+                  </div>
+                  <div className="rounded-lg bg-card-light dark:bg-card-dark border border-gray-200 dark:border-gray-700 px-4 py-3 shadow-sm">
+                    <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark">Chế độ</p>
+                    <p className="text-lg font-semibold text-text-primary-light dark:text-text-primary-dark mt-1">
+                      {view === "trash" ? "Thùng rác" : "Đang xem tất cả"}
+                    </p>
+                    <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                      Cập nhật tự động khi thay đổi
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
