@@ -55,7 +55,7 @@ async def list_notes(
         .where(Note.user_id == current_user.id)
         .where(Note.deleted_at.is_(None))
         .options(selectinload(Note.tags), selectinload(Note.folder))
-        .order_by(Note.updated_at.desc())
+        .order_by(Note.is_pinned.desc(), Note.updated_at.desc())
     )
     if folder_id is not None:
         query = query.where(Note.folder_id == folder_id)
@@ -112,6 +112,7 @@ async def create_note(
         folder_id=note_in.folder_id,
         user_id=current_user.id,
         is_public=note_in.is_public,
+        is_pinned=note_in.is_pinned,
         tags=tags,
         color=note_in.color or "#ffffff",
         image_url=note_in.image_url,
@@ -149,6 +150,8 @@ async def update_note(
         note.is_markdown = note_in.is_markdown
     if note_in.is_public is not None:
         note.is_public = note_in.is_public
+    if note_in.is_pinned is not None:
+        note.is_pinned = note_in.is_pinned
     if note_in.color is not None:
         note.color = note_in.color
     if note_in.image_url is not None:

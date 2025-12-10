@@ -161,6 +161,15 @@ export default function Dashboard() {
     }
   };
 
+  const handleTogglePin = async (noteId, currentPinned) => {
+    try {
+      await notesAPI.updateNote(noteId, { is_pinned: !currentPinned });
+      await fetchNotes(view);
+    } catch (error) {
+      alert("Lỗi khi ghim ghi chú: " + error.message);
+    }
+  };
+
   return (
     <div className="font-display bg-background-light dark:bg-background-dark min-h-screen text-text-primary-light dark:text-text-primary-dark">
       <div className="grid grid-cols-1 lg:grid-cols-[260px,1fr] h-screen">
@@ -379,6 +388,12 @@ export default function Dashboard() {
                       className="relative flex flex-col gap-3 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md p-4 bg-card-light dark:bg-card-dark"
                       style={{ backgroundColor: note.color || undefined }}
                     >
+                      {note.is_pinned && (
+                        <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold shadow-sm">
+                          <span className="material-symbols-outlined text-sm">push_pin</span>
+                          Quan trọng
+                        </div>
+                      )}
                       <div className="flex items-center gap-2 text-xs text-text-secondary-light dark:text-text-secondary-dark">
                         <span className="material-symbols-outlined text-sm">schedule</span>
                         <span>{formatDateDisplay(note.updated_at)}</span>
@@ -434,6 +449,19 @@ export default function Dashboard() {
                           </div>
                         ) : (
                           <div className="flex gap-2">
+                            <button
+                              className={`flex cursor-pointer items-center justify-center gap-1 rounded-lg h-9 px-3 text-sm font-medium leading-normal transition-colors border ${
+                                note.is_pinned
+                                  ? "bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200"
+                                  : "bg-white text-text-primary-light dark:text-text-primary-dark border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
+                              }`}
+                              onClick={() => handleTogglePin(note.id, note.is_pinned)}
+                            >
+                              <span className="material-symbols-outlined text-sm">
+                                {note.is_pinned ? "push_pin" : "pin_drop"}
+                              </span>
+                              {note.is_pinned ? "Bỏ ghim" : "Ghim"}
+                            </button>
                             <button
                               className="flex cursor-pointer items-center justify-center gap-1 rounded-lg h-9 px-3 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 transition-colors"
                               onClick={() => handleViewNote(note.id)}
