@@ -13,6 +13,11 @@ export default function Dashboard() {
   const [view, setView] = useState("all"); // all | trash
   const [sortBy, setSortBy] = useState("recent"); // recent | title
   const [hasImageOnly, setHasImageOnly] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    noteId: null,
+    mode: "trash", // trash | delete
+  });
   const { logout, isAuthenticated, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -105,18 +110,27 @@ export default function Dashboard() {
     }
   };
 
-  const handleDeleteNote = async (noteId) => {
-    if (window.confirm(view === "trash" ? "Xóa vĩnh viễn ghi chú này?" : "Chuyển ghi chú vào thùng rác?")) {
-      try {
-        if (view === "trash") {
-          await notesAPI.forceDeleteNote(noteId);
-        } else {
-          await notesAPI.deleteNote(noteId);
-        }
-        await fetchNotes(view);
-      } catch (error) {
-        alert("Lỗi khi xóa ghi chú: " + error.message);
+  const confirmDelete = (noteId) => {
+    setConfirmModal({
+      open: true,
+      noteId,
+      mode: view === "trash" ? "delete" : "trash",
+    });
+  };
+
+  const handleDeleteNote = async () => {
+    if (!confirmModal.noteId) return;
+    try {
+      if (confirmModal.mode === "delete") {
+        await notesAPI.forceDeleteNote(confirmModal.noteId);
+      } else {
+        await notesAPI.deleteNote(confirmModal.noteId);
       }
+      await fetchNotes(view);
+    } catch (error) {
+      alert("Lỗi khi xóa ghi chú: " + error.message);
+    } finally {
+      setConfirmModal({ open: false, noteId: null, mode: "trash" });
     }
   };
 
@@ -412,7 +426,7 @@ export default function Dashboard() {
                             </button>
                             <button
                               className="flex cursor-pointer items-center justify-center gap-1 rounded-lg h-9 px-3 bg-red-500 text-white text-sm font-medium leading-normal hover:bg-red-600 transition-colors"
-                              onClick={() => handleDeleteNote(note.id)}
+                            onClick={() => confirmDelete(note.id)}
                             >
                               <span className="material-symbols-outlined text-sm">delete_forever</span>
                               Xóa
@@ -429,7 +443,7 @@ export default function Dashboard() {
                             </button>
                             <button
                               className="flex cursor-pointer items-center justify-center gap-1 rounded-lg h-9 px-3 bg-red-500 text-white text-sm font-medium leading-normal hover:bg-red-600 transition-colors"
-                              onClick={() => handleDeleteNote(note.id)}
+                            onClick={() => confirmDelete(note.id)}
                             >
                               <span className="material-symbols-outlined text-sm">delete</span>
                               Xóa
@@ -457,6 +471,43 @@ export default function Dashboard() {
           }}
           onUploadImage={notesAPI.uploadImage}
         />
+      )}
+      {confirmModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+          <div className="w-full max-w-md rounded-xl bg-card-light dark:bg-card-dark shadow-2xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                <span className="material-symbols-outlined">warning</span>
+              </div>
+              <div>
+                <p className="text-lg font-bold text-text-primary-light dark:text-text-primary-dark">
+                  {confirmModal.mode === "delete" ? "Xóa vĩnh viễn?" : "Chuyển vào thùng rác?"}
+                </p>
+                <p className="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                  {confirmModal.mode === "delete"
+                    ? "Thao tác này không thể hoàn tác."
+                    : "Bạn có thể khôi phục trong Thùng rác."}
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-text-primary-light dark:text-text-primary-dark hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={() => setConfirmModal({ open: false, noteId: null, mode: "trash" })}
+              >
+                Hủy
+              </button>
+              <button
+                className={`px-4 py-2 rounded-lg text-white ${
+                  confirmModal.mode === "delete" ? "bg-red-500 hover:bg-red-600" : "bg-primary hover:bg-primary/90"
+                }`}
+                onClick={handleDeleteNote}
+              >
+                {confirmModal.mode === "delete" ? "Xóa vĩnh viễn" : "Chuyển vào thùng rác"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
