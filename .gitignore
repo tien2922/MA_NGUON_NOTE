@@ -27,4 +27,7 @@ Thumbs.db
 # Build artifacts
 *.log
 
+# Database data
+postgres_data/
+
 
