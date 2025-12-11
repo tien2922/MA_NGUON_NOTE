@@ -83,25 +83,29 @@ export default function Dashboard() {
   const filteredNotes = useMemo(() => {
     const lower = searchQuery.toLowerCase();
     let result = notes.filter((note) => {
-      const match =
-        note.title.toLowerCase().includes(lower) ||
-        note.content.toLowerCase().includes(lower);
-      const imageOk = hasImageOnly ? !!note.image_url : true;
+      const title = (note.title || "").toLowerCase();
+      const body = (note.content || "").toLowerCase();
+      const match = title.includes(lower) || body.includes(lower);
+      const imageOk = hasImageOnly ? !!(note.image_url && note.image_url.length > 0) : true;
       const pinOk =
         pinFilter === "all" ? true : pinFilter === "pinned" ? note.is_pinned : !note.is_pinned;
       return match && imageOk && pinOk;
     });
 
     if (sortBy === "title") {
-      result = [...result].sort((a, b) => a.title.localeCompare(b.title));
+      result = [...result].sort((a, b) => {
+        if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+        return (a.title || "").localeCompare(b.title || "");
+      });
     } else {
-      result = [...result].sort(
-        (a, b) => new Date(b.updated_at) - new Date(a.updated_at)
-      );
+      result = [...result].sort((a, b) => {
+        if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+        return new Date(b.updated_at) - new Date(a.updated_at);
+      });
     }
 
     return result;
-  }, [notes, searchQuery, hasImageOnly, sortBy]);
+  }, [notes, searchQuery, hasImageOnly, sortBy, pinFilter]);
 
   const handleCreateNote = () => {
     setEditingNote(null);
