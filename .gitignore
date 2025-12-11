@@ -34,4 +34,9 @@ postgres_data/
 backend/uploads/
 backend/backend/uploads/
 
+# Deployment configs
+DEPLOY_INSTRUCTIONS.txt
+.env.production
+.env.local
+
 
