@@ -30,4 +30,8 @@ Thumbs.db
 # Database data
 postgres_data/
 
+# Uploads (user data)
+backend/uploads/
+backend/backend/uploads/
+
 

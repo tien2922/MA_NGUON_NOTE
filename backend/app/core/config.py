@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     smtp_user: str | None = Field(None, alias="SMTP_USER")
     smtp_password: str | None = Field(None, alias="SMTP_PASSWORD")
     smtp_from: str | None = Field(None, alias="SMTP_FROM")
+    smtp_use_tls: bool = Field(True, alias="SMTP_USE_TLS")
+    smtp_use_ssl: bool = Field(False, alias="SMTP_USE_SSL")
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -35,6 +37,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        case_sensitive = False
 
 
 settings = Settings()

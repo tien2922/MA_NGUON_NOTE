@@ -8,6 +8,7 @@ from sqlalchemy import select, or_
 from .. import schemas
 from ..core import security
 from ..core.config import settings
+from ..core.email import send_welcome_email
 from ..database import get_session
 from ..deps import get_current_user
 from ..models import User
@@ -33,6 +34,16 @@ async def register(user_in: schemas.UserCreate, session: AsyncSession = Depends(
     session.add(user)
     await session.commit()
     await session.refresh(user)
+    
+    # Gửi email chào mừng (không block nếu lỗi)
+    try:
+        await send_welcome_email(user.email, user.username)
+    except Exception as e:
+        # Log lỗi nhưng không làm fail đăng ký
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Không thể gửi email chào mừng: {str(e)}")
+    
     return user
 
 

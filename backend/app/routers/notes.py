@@ -113,6 +113,7 @@ async def create_note(
         user_id=current_user.id,
         is_public=note_in.is_public,
         reminder_at=note_in.reminder_at,
+        reminder_sent=False,  # Mặc định chưa gửi email nhắc nhở
         is_pinned=note_in.is_pinned,
         tags=tags,
         color=note_in.color or "#ffffff",
@@ -153,7 +154,8 @@ async def update_note(
         note.is_public = note_in.is_public
     if note_in.reminder_at is not None:
         note.reminder_at = note_in.reminder_at
-        note.reminder_sent = False
+        # Reset reminder_sent khi có reminder mới hoặc xóa reminder
+        note.reminder_sent = False if note_in.reminder_at else False
     if note_in.is_pinned is not None:
         note.is_pinned = note_in.is_pinned
     if note_in.color is not None:

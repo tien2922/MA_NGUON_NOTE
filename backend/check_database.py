@@ -20,7 +20,7 @@ async def check_table_structure():
         
         if not columns:
             print("❌ Bảng 'users' chưa tồn tại!")
-            print("Chạy: python reset_database.py để tạo lại bảng")
+            print("Chạy: python fix_database.py để tạo lại bảng")
             return
         
         print("=== Cấu trúc bảng users ===")
@@ -33,7 +33,7 @@ async def check_table_structure():
             print("\n✅ Field 'username' đã có trong database")
         else:
             print("\n❌ Field 'username' CHƯA có trong database!")
-            print("Chạy: python reset_database.py để thêm field username")
+            print("Chạy: python fix_database.py để thêm field username")
 
 if __name__ == "__main__":
     asyncio.run(check_table_structure())
