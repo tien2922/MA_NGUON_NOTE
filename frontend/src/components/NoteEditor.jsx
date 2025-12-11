@@ -6,6 +6,7 @@ export default function NoteEditor({ note, onSave, onClose, onUploadImage }) {
   const [content, setContent] = useState("");
   const [color, setColor] = useState("#ffffff");
   const [imageUrl, setImageUrl] = useState("");
+  const [reminderAt, setReminderAt] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -15,11 +16,21 @@ export default function NoteEditor({ note, onSave, onClose, onUploadImage }) {
       setContent(note.content || "");
       setColor(note.color || "#ffffff");
       setImageUrl(note.image_url || "");
+      if (note.reminder_at) {
+        const dt = new Date(note.reminder_at);
+        const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
+          .toISOString()
+          .slice(0, 16);
+        setReminderAt(local);
+      } else {
+        setReminderAt("");
+      }
     } else {
       setTitle("");
       setContent("");
       setColor("#ffffff");
       setImageUrl("");
+      setReminderAt("");
     }
   }, [note]);
 
@@ -41,6 +52,7 @@ export default function NoteEditor({ note, onSave, onClose, onUploadImage }) {
         is_public: false,
         color,
         image_url: imageUrl || null,
+        reminder_at: reminderAt ? new Date(reminderAt).toISOString() : null,
       });
     } finally {
       setLoading(false);
@@ -162,6 +174,22 @@ export default function NoteEditor({ note, onSave, onClose, onUploadImage }) {
                   </div>
                 )}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark">
+                Nhắc nhở (ngày giờ)
+              </label>
+              <input
+                type="datetime-local"
+                value={reminderAt}
+                onChange={(e) => setReminderAt(e.target.value)}
+                disabled={loading}
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 text-text-primary-light dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                Để trống nếu không cần nhắc.
+              </p>
             </div>
           </div>
 

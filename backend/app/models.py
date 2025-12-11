@@ -58,6 +58,8 @@ class Note(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     is_pinned: Mapped[bool] = mapped_column(Boolean, default=False)
     is_public: Mapped[bool] = mapped_column(Boolean, default=False)
+    reminder_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    reminder_sent: Mapped[bool] = mapped_column(Boolean, default=False)
     color: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

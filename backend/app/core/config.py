@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     jwt_algorithm: str = Field("HS256", alias="JWT_ALGORITHM")
     access_token_expire_minutes: int = Field(60 * 24, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
     cors_origins: List[str] = Field(default_factory=lambda: ["*"], alias="CORS_ORIGINS")
+    reminder_enabled: bool = Field(False, alias="REMINDER_ENABLED")
+    smtp_host: str | None = Field(None, alias="SMTP_HOST")
+    smtp_port: int | None = Field(None, alias="SMTP_PORT")
+    smtp_user: str | None = Field(None, alias="SMTP_USER")
+    smtp_password: str | None = Field(None, alias="SMTP_PASSWORD")
+    smtp_from: str | None = Field(None, alias="SMTP_FROM")
 
     @field_validator("cors_origins", mode="before")
     @classmethod

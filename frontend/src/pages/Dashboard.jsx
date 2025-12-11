@@ -129,16 +129,16 @@ export default function Dashboard() {
     try {
       if (confirmModal.mode === "delete") {
         await notesAPI.forceDeleteNote(confirmModal.noteId);
-      } else {
+        } else {
         await notesAPI.deleteNote(confirmModal.noteId);
-      }
-      await fetchNotes(view);
+        }
+        await fetchNotes(view);
       setToast({
         open: true,
         type: "success",
         message: confirmModal.mode === "delete" ? "Đã xóa vĩnh viễn" : "Đã chuyển vào thùng rác",
       });
-    } catch (error) {
+      } catch (error) {
       setToast({ open: true, type: "error", message: "Lỗi khi xóa ghi chú" });
     } finally {
       setConfirmModal({ open: false, noteId: null, mode: "trash" });
@@ -199,14 +199,14 @@ export default function Dashboard() {
               </div>
               <div>
                 <h1 className="text-text-primary-light dark:text-text-primary-dark text-base font-bold leading-tight">
-                  Ghi Chú Thông Minh
-                </h1>
+                Ghi Chú Thông Minh
+              </h1>
                 <p className="text-text-secondary-light dark:text-text-secondary-dark text-xs">
-                  Không gian cá nhân của bạn
-                </p>
+                Không gian cá nhân của bạn
+              </p>
               </div>
             </div>
-            {user && (
+              {user && (
               <div className="mx-3 px-3 py-2 rounded-lg bg-primary/5 border border-primary/15 text-sm text-text-primary-light dark:text-text-primary-dark">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary">person</span>
@@ -346,19 +346,19 @@ export default function Dashboard() {
 
               {/* Search + stats */}
               <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
-                <label className="flex flex-col min-w-40 h-12 w-full">
+              <label className="flex flex-col min-w-40 h-12 w-full">
                   <div className="flex w-full flex-1 items-stretch rounded-full h-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 shadow-sm px-2">
                     <div className="text-text-secondary-light dark:text-text-secondary-dark flex items-center justify-center pl-2 pr-1">
-                      <span className="material-symbols-outlined">search</span>
-                    </div>
-                    <input
+                    <span className="material-symbols-outlined">search</span>
+                  </div>
+                  <input
                       className="flex w-full min-w-0 flex-1 rounded-full text-text-primary-light dark:text-text-primary-dark focus:outline-0 focus:ring-2 focus:ring-primary/40 border-none bg-transparent h-full placeholder:text-text-secondary-light placeholder:dark:text-text-secondary-dark px-3 text-base"
                       placeholder="Tìm kiếm tiêu đề hoặc nội dung..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                </label>
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </label>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-lg bg-gradient-to-br from-primary/90 to-primary text-white px-4 py-3 shadow-sm">
                     <p className="text-xs opacity-90">Tổng ghi chú</p>
@@ -398,12 +398,12 @@ export default function Dashboard() {
                     {view === "trash" ? "Thùng rác trống" : "Chưa có ghi chú phù hợp"}
                   </p>
                   <p className="text-text-secondary-light dark:text-text-secondary-dark">
-                    {view === "trash"
+                  {view === "trash"
                       ? "Không có ghi chú trong thùng rác."
-                      : searchQuery
+                    : searchQuery
                       ? "Thử tìm bằng từ khóa khác hoặc xóa bộ lọc."
                       : "Tạo ghi chú đầu tiên của bạn để bắt đầu."}
-                  </p>
+                </p>
                 </div>
                 {view !== "trash" && (
                   <button
@@ -435,27 +435,27 @@ export default function Dashboard() {
                       </div>
 
                       <div className="flex gap-3">
-                        <div className="h-20 w-20 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white/60 dark:bg-gray-800/60 flex items-center justify-center">
-                          {note.image_url ? (
-                            <img
-                              src={buildFileUrl(note.image_url)}
-                              alt="Ảnh ghi chú"
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-text-secondary-light dark:text-text-secondary-dark text-sm">
+                      <div className="h-20 w-20 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white/60 dark:bg-gray-800/60 flex items-center justify-center">
+                        {note.image_url ? (
+                          <img
+                            src={buildFileUrl(note.image_url)}
+                            alt="Ảnh ghi chú"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-text-secondary-light dark:text-text-secondary-dark text-sm">
                               Không ảnh
-                            </span>
-                          )}
-                        </div>
+                          </span>
+                        )}
+                      </div>
 
                         <div className="flex-1 min-w-0 flex flex-col gap-1">
                           <p className="text-text-primary-light dark:text-text-primary-dark text-lg font-bold leading-tight tracking-[-0.015em] line-clamp-1">
-                            {note.title}
-                          </p>
+                          {note.title}
+                        </p>
                           <p className="text-text-secondary-light dark:text-text-secondary-dark text-sm leading-normal line-clamp-3">
-                            {note.content || "Không có nội dung"}
-                          </p>
+                          {note.content || "Không có nội dung"}
+                        </p>
                         </div>
                       </div>
 
@@ -465,24 +465,24 @@ export default function Dashboard() {
                             {note.image_url ? "Có ảnh" : "Văn bản"}
                           </span>
                         </div>
-                        {view === "trash" ? (
+                      {view === "trash" ? (
                           <div className="flex gap-2">
-                            <button
+                          <button
                               className="flex cursor-pointer items-center justify-center gap-1 rounded-lg h-9 px-3 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 transition-colors"
-                              onClick={() => handleRestoreNote(note.id)}
-                            >
+                            onClick={() => handleRestoreNote(note.id)}
+                          >
                               <span className="material-symbols-outlined text-sm">restore_from_trash</span>
                               Khôi phục
-                            </button>
-                            <button
+                          </button>
+                          <button
                               className="flex cursor-pointer items-center justify-center gap-1 rounded-lg h-9 px-3 bg-red-500 text-white text-sm font-medium leading-normal hover:bg-red-600 transition-colors"
                             onClick={() => confirmDelete(note.id)}
-                            >
+                          >
                               <span className="material-symbols-outlined text-sm">delete_forever</span>
                               Xóa
-                            </button>
-                          </div>
-                        ) : (
+                          </button>
+                        </div>
+                      ) : (
                           <div className="flex gap-2">
                             <button
                               className={`flex cursor-pointer items-center justify-center gap-1 rounded-lg h-9 px-3 text-sm font-medium leading-normal transition-colors border ${
@@ -497,22 +497,22 @@ export default function Dashboard() {
                               </span>
                               {note.is_pinned ? "Bỏ ghim" : "Ghim"}
                             </button>
-                            <button
+                          <button
                               className="flex cursor-pointer items-center justify-center gap-1 rounded-lg h-9 px-3 bg-primary text-white text-sm font-medium leading-normal hover:bg-primary/90 transition-colors"
-                              onClick={() => handleViewNote(note.id)}
-                            >
+                            onClick={() => handleViewNote(note.id)}
+                          >
                               <span className="material-symbols-outlined text-sm">edit</span>
                               Sửa
-                            </button>
-                            <button
+                          </button>
+                          <button
                               className="flex cursor-pointer items-center justify-center gap-1 rounded-lg h-9 px-3 bg-red-500 text-white text-sm font-medium leading-normal hover:bg-red-600 transition-colors"
                             onClick={() => confirmDelete(note.id)}
-                            >
+                          >
                               <span className="material-symbols-outlined text-sm">delete</span>
                               Xóa
-                            </button>
-                          </div>
-                        )}
+                          </button>
+                        </div>
+                      )}
                       </div>
                     </div>
                   </div>

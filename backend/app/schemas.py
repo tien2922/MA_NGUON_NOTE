@@ -68,6 +68,7 @@ class NoteBase(BaseModel):
     folder_id: Optional[int] = None
     tag_ids: List[int] = Field(default_factory=list)
     is_public: bool = False
+    reminder_at: Optional[datetime] = None
     is_pinned: bool = False
     color: Optional[str] = None
     image_url: Optional[str] = None
@@ -84,6 +85,7 @@ class NoteUpdate(BaseModel):
     folder_id: Optional[int] = None
     tag_ids: Optional[List[int]] = None
     is_public: Optional[bool] = None
+    reminder_at: Optional[datetime] = None
     is_pinned: Optional[bool] = None
     color: Optional[str] = None
     image_url: Optional[str] = None
@@ -93,6 +95,8 @@ class NoteOut(NoteBase):
     id: int
     created_at: datetime
     updated_at: datetime
+    reminder_at: Optional[datetime] = None
+    reminder_sent: bool = False
     is_pinned: bool = False
     tags: List[TagOut] = Field(default_factory=list)
     deleted_at: Optional[datetime] = None

@@ -1,12 +1,14 @@
 import asyncio
 import os
+import contextlib
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .core.config import settings
-from .database import Base, engine
+from .database import Base, engine, AsyncSessionLocal
 from .routers import auth, folders, notes, search, share, tags
+from .reminder import reminder_worker
 
 
 app = FastAPI(title=settings.app_name)
@@ -29,6 +31,8 @@ app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 async def on_startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    if settings.reminder_enabled and settings.smtp_host:
+        app.state.reminder_task = asyncio.create_task(reminder_worker(AsyncSessionLocal))
 
 
 @app.get("/")
@@ -42,4 +46,13 @@ app.include_router(tags.router)
 app.include_router(notes.router)
 app.include_router(search.router)
 app.include_router(share.router)
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    task = getattr(app.state, "reminder_task", None)
+    if task:
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
 

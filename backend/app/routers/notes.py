@@ -112,6 +112,7 @@ async def create_note(
         folder_id=note_in.folder_id,
         user_id=current_user.id,
         is_public=note_in.is_public,
+        reminder_at=note_in.reminder_at,
         is_pinned=note_in.is_pinned,
         tags=tags,
         color=note_in.color or "#ffffff",
@@ -150,6 +151,9 @@ async def update_note(
         note.is_markdown = note_in.is_markdown
     if note_in.is_public is not None:
         note.is_public = note_in.is_public
+    if note_in.reminder_at is not None:
+        note.reminder_at = note_in.reminder_at
+        note.reminder_sent = False
     if note_in.is_pinned is not None:
         note.is_pinned = note_in.is_pinned
     if note_in.color is not None:
