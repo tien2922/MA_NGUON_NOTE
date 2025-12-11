@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { notesAPI, buildFileUrl } from "../services/api";
 import NoteEditor from "../components/NoteEditor";
+import FolderTree from "../components/FolderTree";
+import ShareNoteModal from "../components/ShareNoteModal";
+import NotificationsPanel from "../components/NotificationsPanel";
 
 export default function Dashboard() {
   const [notes, setNotes] = useState([]);
@@ -14,12 +17,14 @@ export default function Dashboard() {
   const [sortBy, setSortBy] = useState("recent"); // recent | title
   const [hasImageOnly, setHasImageOnly] = useState(false);
   const [pinFilter, setPinFilter] = useState("all"); // all | pinned | unpinned
+  const [selectedFolderId, setSelectedFolderId] = useState(null);
   const [confirmModal, setConfirmModal] = useState({
     open: false,
     noteId: null,
     mode: "trash", // trash | delete
   });
   const [toast, setToast] = useState({ open: false, type: "success", message: "" });
+  const [shareModal, setShareModal] = useState({ open: false, note: null });
   const { logout, isAuthenticated, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -32,13 +37,18 @@ export default function Dashboard() {
       return;
     }
     fetchNotes(view);
-  }, [isAuthenticated, authLoading, navigate, view]);
+  }, [isAuthenticated, authLoading, navigate, view, selectedFolderId]);
 
   const fetchNotes = async (mode = "all") => {
     try {
       setLoading(true);
-      const data = mode === "trash" ? await notesAPI.getTrash() : await notesAPI.getNotes();
-      setNotes(data);
+      if (mode === "trash") {
+        const data = await notesAPI.getTrash();
+        setNotes(data);
+      } else {
+        const data = await notesAPI.getNotes(selectedFolderId);
+        setNotes(data);
+      }
     } catch (error) {
       console.error("Error fetching notes:", error);
       // Nếu lỗi 401, đăng xuất và chuyển về trang đăng nhập
@@ -159,26 +169,35 @@ export default function Dashboard() {
     }
   };
 
-  const handleSaveNote = async (noteData) => {
+  const handleSaveNote = async (noteData, isAutoSave = false) => {
     try {
       if (editingNote) {
         // Cập nhật note
         await notesAPI.updateNote(editingNote.id, noteData);
+        // Cập nhật editingNote để sync với data mới
+        setEditingNote({ ...editingNote, ...noteData });
       } else {
         // Tạo note mới
-        await notesAPI.createNote(noteData);
+        const newNote = await notesAPI.createNote(noteData);
+        setEditingNote(newNote); // Set làm editingNote để có thể auto-save sau này
       }
       // Refresh danh sách notes
       await fetchNotes(view);
-      setShowNoteEditor(false);
-      setEditingNote(null);
-      setToast({
-        open: true,
-        type: "success",
-        message: editingNote ? "Đã cập nhật ghi chú" : "Đã tạo ghi chú",
-      });
+      
+      // Chỉ đóng editor nếu không phải auto-save
+      if (!isAutoSave) {
+        setShowNoteEditor(false);
+        setEditingNote(null);
+        setToast({
+          open: true,
+          type: "success",
+          message: editingNote ? "Đã cập nhật ghi chú" : "Đã tạo ghi chú",
+        });
+      }
     } catch (error) {
-      setToast({ open: true, type: "error", message: "Lỗi khi lưu ghi chú" });
+      if (!isAutoSave) {
+        setToast({ open: true, type: "error", message: "Lỗi khi lưu ghi chú" });
+      }
     }
   };
 
@@ -195,7 +214,7 @@ export default function Dashboard() {
     <div className="font-display bg-background-light dark:bg-background-dark min-h-screen text-text-primary-light dark:text-text-primary-dark">
       <div className="grid grid-cols-1 lg:grid-cols-[260px,1fr] h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950">
         {/* SideNavBar */}
-        <aside className="flex h-full flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur p-4 border-r border-gray-200 dark:border-gray-800">
+        <aside className="relative flex h-full flex-col bg-white/80 dark:bg-slate-900/80 backdrop-blur p-4 border-r border-gray-200 dark:border-gray-800 overflow-visible">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3 px-3 pt-2">
               <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
@@ -223,6 +242,12 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+            
+            {/* Notifications Panel */}
+            <div className="mx-3 mb-2">
+              <NotificationsPanel onRefreshNotes={() => fetchNotes(view)} />
+            </div>
+            
             <div className="flex flex-col gap-1">
               <button
                 className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
@@ -263,6 +288,17 @@ export default function Dashboard() {
                 <span className="material-symbols-outlined">settings</span>
                 <p className="text-sm font-medium leading-normal">Cài đặt</p>
               </button>
+            </div>
+            
+            {/* Folder Tree */}
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <FolderTree
+                selectedFolderId={selectedFolderId}
+                onSelectFolder={(folderId) => {
+                  setSelectedFolderId(folderId);
+                  setView("all");
+                }}
+              />
             </div>
           </div>
           <div className="mt-auto flex flex-col gap-2">
@@ -451,12 +487,18 @@ export default function Dashboard() {
                             src={buildFileUrl(note.image_url)}
                             alt="Ảnh ghi chú"
                             className="h-full w-full object-cover"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
                           />
-                        ) : (
-                          <span className="text-text-secondary-light dark:text-text-secondary-dark text-sm">
-                              Không ảnh
-                          </span>
-                        )}
+                        ) : null}
+                        <span 
+                          className="text-text-secondary-light dark:text-text-secondary-dark text-sm"
+                          style={{ display: note.image_url ? 'none' : 'flex' }}
+                        >
+                          {note.image_url ? 'Lỗi tải ảnh' : 'Không ảnh'}
+                        </span>
                       </div>
 
                         <div className="flex-1 min-w-0 flex flex-col gap-1">
@@ -514,6 +556,15 @@ export default function Dashboard() {
                               <span className="material-symbols-outlined text-sm">edit</span>
                               Sửa
                           </button>
+                          {note.user_id === user?.id && (
+                            <button
+                              className="flex cursor-pointer items-center justify-center gap-1 rounded-lg h-9 px-3 bg-green-500 text-white text-sm font-medium leading-normal hover:bg-green-600 transition-colors"
+                              onClick={() => setShareModal({ open: true, note })}
+                            >
+                              <span className="material-symbols-outlined text-sm">share</span>
+                              Share
+                            </button>
+                          )}
                           <button
                               className="flex cursor-pointer items-center justify-center gap-1 rounded-lg h-9 px-3 bg-red-500 text-white text-sm font-medium leading-normal hover:bg-red-600 transition-colors"
                             onClick={() => confirmDelete(note.id)}
@@ -537,12 +588,24 @@ export default function Dashboard() {
       {showNoteEditor && (
         <NoteEditor
           note={editingNote}
+          selectedFolderId={selectedFolderId}
           onSave={handleSaveNote}
           onClose={() => {
             setShowNoteEditor(false);
             setEditingNote(null);
           }}
           onUploadImage={notesAPI.uploadImage}
+        />
+      )}
+
+      {/* Share Note Modal */}
+      {shareModal.open && shareModal.note && (
+        <ShareNoteModal
+          note={shareModal.note}
+          onClose={() => setShareModal({ open: false, note: null })}
+          onSuccess={() => {
+            setToast({ open: true, type: "success", message: "Đã gửi share request thành công" });
+          }}
         />
       )}
       {confirmModal.open && (

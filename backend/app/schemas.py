@@ -93,6 +93,7 @@ class NoteUpdate(BaseModel):
 
 class NoteOut(NoteBase):
     id: int
+    user_id: int
     created_at: datetime
     updated_at: datetime
     reminder_at: Optional[datetime] = None
@@ -118,3 +119,20 @@ class ShareLinkOut(BaseModel):
     expires_at: Optional[datetime]
     url: str
 
+
+class ShareNoteRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=100)
+
+
+class ShareRequestOut(BaseModel):
+    id: int
+    note_id: int
+    note_title: str
+    shared_by_user_id: int
+    shared_by_username: str
+    shared_with_user_id: int
+    status: str
+    created_at: datetime
+    responded_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}

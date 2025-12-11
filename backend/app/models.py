@@ -100,3 +100,19 @@ class ShareLink(Base):
 
     note: Mapped[Note] = relationship(back_populates="share_links")
 
+
+class NoteShare(Base):
+    __tablename__ = "note_shares"
+    __table_args__ = (UniqueConstraint("note_id", "shared_with_user_id", name="uq_note_share"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    note_id: Mapped[int] = mapped_column(ForeignKey("notes.id", ondelete="CASCADE"), index=True)
+    shared_by_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    shared_with_user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending | accepted | rejected
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    responded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    note: Mapped[Note] = relationship()
+    shared_by: Mapped[User] = relationship(foreign_keys=[shared_by_user_id])
+    shared_with: Mapped[User] = relationship(foreign_keys=[shared_with_user_id])

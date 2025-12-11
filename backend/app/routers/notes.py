@@ -12,7 +12,7 @@ import os
 from .. import schemas
 from ..database import get_session
 from ..deps import get_current_user
-from ..models import Folder, Note, Tag, User
+from ..models import Folder, Note, Tag, User, NoteShare
 
 router = APIRouter(prefix="/notes", tags=["notes"])
 
@@ -50,17 +50,50 @@ async def list_notes(
     current_user: User = Depends(get_current_user),
 ):
     await _purge_deleted(session)
+    
+    # Lấy notes của user
     query = (
         select(Note)
         .where(Note.user_id == current_user.id)
         .where(Note.deleted_at.is_(None))
         .options(selectinload(Note.tags), selectinload(Note.folder))
-        .order_by(Note.is_pinned.desc(), Note.updated_at.desc())
     )
+    
     if folder_id is not None:
         query = query.where(Note.folder_id == folder_id)
+    
     result = await session.execute(query)
-    return result.scalars().all()
+    user_notes = result.scalars().all()
+    
+    # Lấy shared notes đã accepted
+    shared_query = (
+        select(Note)
+        .join(NoteShare, NoteShare.note_id == Note.id)
+        .where(
+            NoteShare.shared_with_user_id == current_user.id,
+            NoteShare.status == "accepted",
+            Note.deleted_at.is_(None)
+        )
+        .options(selectinload(Note.tags), selectinload(Note.folder))
+    )
+    
+    if folder_id is not None:
+        shared_query = shared_query.where(Note.folder_id == folder_id)
+    
+    shared_result = await session.execute(shared_query)
+    shared_notes = shared_result.scalars().all()
+    
+    # Kết hợp và loại bỏ trùng lặp (nếu user share note của chính mình)
+    all_notes = list(user_notes)
+    note_ids = {note.id for note in user_notes}
+    for note in shared_notes:
+        if note.id not in note_ids:
+            all_notes.append(note)
+    
+    # Sắp xếp
+    all_notes.sort(key=lambda n: (not n.is_pinned, n.updated_at), reverse=True)
+    
+    return all_notes
 
 
 @router.get("/trash", response_model=List[schemas.NoteOut])
@@ -235,7 +268,19 @@ async def upload_image(
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Chỉ cho phép tải lên ảnh")
 
-    uploads_dir = os.path.join(os.getcwd(), "backend", "uploads")
+    # Tìm đường dẫn uploads: có thể ở backend/uploads hoặc ../backend/uploads
+    _current_file = os.path.abspath(__file__)
+    _routers_dir = os.path.dirname(_current_file)  # Thư mục routers/
+    _app_dir = os.path.dirname(_routers_dir)  # Thư mục app/
+    _backend_dir = os.path.dirname(_app_dir)  # Thư mục backend/
+    _project_root = os.path.dirname(_backend_dir)  # Thư mục gốc
+    
+    # Thử tìm uploads ở backend/uploads trước
+    uploads_dir = os.path.join(_backend_dir, "uploads")
+    if not os.path.exists(uploads_dir):
+        # Nếu không có, thử ở thư mục gốc/backend/uploads
+        uploads_dir = os.path.join(_project_root, "backend", "uploads")
+    
     os.makedirs(uploads_dir, exist_ok=True)
 
     ext = os.path.splitext(file.filename)[1]

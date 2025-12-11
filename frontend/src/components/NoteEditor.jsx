@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { buildFileUrl } from "../services/api";
 
-export default function NoteEditor({ note, onSave, onClose, onUploadImage }) {
+export default function NoteEditor({ note, selectedFolderId, onSave, onClose, onUploadImage }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [color, setColor] = useState("#ffffff");
@@ -9,6 +9,10 @@ export default function NoteEditor({ note, onSave, onClose, onUploadImage }) {
   const [reminderAt, setReminderAt] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState(""); // "saving" | "saved" | ""
+  const autoSaveTimeoutRef = useRef(null);
+  const lastSavedRef = useRef({ title: "", content: "" });
 
   const toLocalInput = (isoString) => {
     if (!isoString) return "";
@@ -25,14 +29,77 @@ export default function NoteEditor({ note, onSave, onClose, onUploadImage }) {
       setColor(note.color || "#ffffff");
       setImageUrl(note.image_url || "");
       setReminderAt(toLocalInput(note.reminder_at));
+      lastSavedRef.current = { title: note.title || "", content: note.content || "" };
     } else {
       setTitle("");
       setContent("");
       setColor("#ffffff");
       setImageUrl("");
       setReminderAt("");
+      lastSavedRef.current = { title: "", content: "" };
     }
+    setAutoSaveStatus("");
   }, [note]);
+
+  // Auto-save function với debounce
+  const autoSave = useCallback(async () => {
+    if (!note) return; // Chỉ auto-save khi đang edit note cũ, không phải tạo mới
+    
+    const currentTitle = title.trim();
+    const currentContent = content.trim();
+    
+    // Kiểm tra xem có thay đổi không
+    if (
+      currentTitle === lastSavedRef.current.title &&
+      currentContent === lastSavedRef.current.content
+    ) {
+      return; // Không có thay đổi, không cần save
+    }
+
+    if (!currentTitle) return; // Không save nếu chưa có title
+
+    setAutoSaveStatus("saving");
+    try {
+      await onSave({
+        title: currentTitle,
+        content: currentContent,
+        is_markdown: true,
+        folder_id: note.folder_id || selectedFolderId || null,
+        tag_ids: [],
+        is_public: note.is_public || false,
+        color,
+        image_url: imageUrl || null,
+        reminder_at: reminderAt ? new Date(reminderAt).toISOString() : null,
+      }, true); // true = auto-save mode
+      lastSavedRef.current = { title: currentTitle, content: currentContent };
+      setAutoSaveStatus("saved");
+      setTimeout(() => setAutoSaveStatus(""), 2000);
+    } catch (error) {
+      console.error("Auto-save error:", error);
+      setAutoSaveStatus("");
+    }
+  }, [note, title, content, color, imageUrl, reminderAt, onSave]);
+
+  // Debounce auto-save khi title hoặc content thay đổi
+  useEffect(() => {
+    if (!note) return; // Chỉ auto-save khi edit note cũ
+    
+    // Clear timeout cũ
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Set timeout mới - auto-save sau 2 giây không gõ
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      autoSave();
+    }, 2000);
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [title, content, note, autoSave]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,16 +114,32 @@ export default function NoteEditor({ note, onSave, onClose, onUploadImage }) {
         title: title.trim(),
         content: content.trim(),
         is_markdown: true,
-        folder_id: null,
+        folder_id: note?.folder_id || selectedFolderId || null,
         tag_ids: [],
-        is_public: false,
+        is_public: note?.is_public || false,
         color,
         image_url: imageUrl || null,
         reminder_at: reminderAt ? new Date(reminderAt).toISOString() : null,
-      });
+      }, false); // false = manual save
+      lastSavedRef.current = { title: title.trim(), content: content.trim() };
     } finally {
       setLoading(false);
     }
+  };
+
+  // Markdown preview renderer (simple version)
+  const renderMarkdown = (text) => {
+    if (!text) return "";
+    
+    return text
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+      .replace(/`(.*?)`/gim, '<code>$1</code>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2">$1</a>')
+      .replace(/\n/gim, '<br>');
   };
 
   const handleUpload = async (file) => {
@@ -77,15 +160,38 @@ export default function NoteEditor({ note, onSave, onClose, onUploadImage }) {
       <div className="bg-card-light dark:bg-card-dark rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-bold text-text-primary-light dark:text-text-primary-dark">
-            {note ? "Chỉnh sửa ghi chú" : "Tạo ghi chú mới"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-text-secondary-light dark:text-text-secondary-dark hover:text-text-primary-light dark:hover:text-text-primary-dark"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-text-primary-light dark:text-text-primary-dark">
+              {note ? "Chỉnh sửa ghi chú" : "Tạo ghi chú mới"}
+            </h2>
+            {note && autoSaveStatus && (
+              <span className={`text-xs ${
+                autoSaveStatus === "saving" ? "text-yellow-500" : "text-green-500"
+              }`}>
+                {autoSaveStatus === "saving" ? "Đang lưu..." : "Đã lưu"}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {note && (
+              <button
+                onClick={() => setShowPreview(!showPreview)}
+                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                  showPreview
+                    ? "bg-primary text-white"
+                    : "text-text-secondary-light dark:text-text-secondary-dark hover:bg-primary/10"
+                }`}
+              >
+                {showPreview ? "Chỉnh sửa" : "Xem trước"}
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-text-secondary-light dark:text-text-secondary-dark hover:text-text-primary-light dark:hover:text-text-primary-dark"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
         </div>
 
         {/* Form */}
@@ -108,15 +214,22 @@ export default function NoteEditor({ note, onSave, onClose, onUploadImage }) {
 
             <div className="flex-1">
               <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-                Nội dung
+                Nội dung {note && <span className="text-xs text-text-secondary-light dark:text-text-secondary-dark">(Markdown được hỗ trợ)</span>}
               </label>
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="w-full h-64 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 text-text-primary-light dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                placeholder="Nhập nội dung ghi chú..."
-                disabled={loading}
-              />
+              {showPreview && note ? (
+                <div
+                  className="w-full h-64 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 overflow-y-auto prose prose-sm max-w-none dark:prose-invert"
+                  dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+                />
+              ) : (
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className="w-full h-64 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 text-text-primary-light dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary resize-none font-mono text-sm"
+                  placeholder="Nhập nội dung ghi chú... (Markdown được hỗ trợ: **bold**, *italic*, # heading, `code`)"
+                  disabled={loading}
+                />
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -163,11 +276,21 @@ export default function NoteEditor({ note, onSave, onClose, onUploadImage }) {
                 )}
                 {imageUrl && (
                   <div className="mt-2">
-                    <img
-                      src={buildFileUrl(imageUrl)}
-                      alt="Ảnh ghi chú"
-                      className="max-h-40 rounded-lg border border-gray-200 dark:border-gray-700"
-                    />
+                    <div className="relative">
+                      <img
+                        src={buildFileUrl(imageUrl)}
+                        alt="Ảnh ghi chú"
+                        className="max-h-40 rounded-lg border border-gray-200 dark:border-gray-700"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          const errorDiv = e.target.nextSibling;
+                          if (errorDiv) errorDiv.style.display = 'flex';
+                        }}
+                      />
+                      <div className="hidden max-h-40 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-red-500 text-sm p-4">
+                        Không thể tải ảnh. File có thể đã bị xóa.
+                      </div>
+                    </div>
                     <p className="text-xs text-text-secondary-light dark:text-text-secondary-dark break-all mt-1">
                       {imageUrl}
                     </p>

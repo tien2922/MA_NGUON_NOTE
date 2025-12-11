@@ -11,6 +11,14 @@ from .database import Base, engine, AsyncSessionLocal
 from .routers import auth, folders, notes, search, share, tags
 from .reminder import reminder_worker
 
+# Cấu hình logging để hiển thị logs của reminder worker
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler()  # Hiển thị logs ra console
+    ]
+)
 logger = logging.getLogger(__name__)
 
 
@@ -25,8 +33,19 @@ app.add_middleware(
 )
 
 # Static files for uploads
-uploads_dir = os.path.join(os.getcwd(), "backend", "uploads")
+# Tìm đường dẫn uploads: có thể ở backend/uploads hoặc ../backend/uploads
+_current_dir = os.path.dirname(os.path.abspath(__file__))  # Thư mục app/
+_backend_dir = os.path.dirname(_current_dir)  # Thư mục backend/
+_project_root = os.path.dirname(_backend_dir)  # Thư mục gốc
+
+# Thử tìm uploads ở backend/uploads trước
+uploads_dir = os.path.join(_backend_dir, "uploads")
+if not os.path.exists(uploads_dir):
+    # Nếu không có, thử ở thư mục gốc/backend/uploads
+    uploads_dir = os.path.join(_project_root, "backend", "uploads")
+
 os.makedirs(uploads_dir, exist_ok=True)
+logger.info(f"📁 Uploads directory: {uploads_dir}")
 app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 

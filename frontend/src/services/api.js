@@ -193,5 +193,58 @@ export const authAPI = {
   },
 };
 
+// Folders API
+export const foldersAPI = {
+  // Lấy danh sách folders
+  getFolders: async () => {
+    return apiRequest('/folders');
+  },
+
+  // Tạo folder mới
+  createFolder: async (folderData) => {
+    return apiRequest('/folders', {
+      method: 'POST',
+      body: JSON.stringify(folderData),
+    });
+  },
+
+  // Xóa folder
+  deleteFolder: async (folderId) => {
+    return apiRequest(`/folders/${folderId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Share API
+export const shareAPI = {
+  // Share note với user
+  shareNoteWithUser: async (noteId, username) => {
+    return apiRequest(`/share/notes/${noteId}/user`, {
+      method: 'POST',
+      body: JSON.stringify({ username }),
+    });
+  },
+
+  // Lấy danh sách share requests đang chờ
+  getPendingShares: async () => {
+    return apiRequest('/share/requests/pending');
+  },
+
+  // Chấp nhận share request
+  acceptShare: async (shareId) => {
+    return apiRequest(`/share/requests/${shareId}/accept`, {
+      method: 'POST',
+    });
+  },
+
+  // Từ chối share request
+  rejectShare: async (shareId) => {
+    return apiRequest(`/share/requests/${shareId}/reject`, {
+      method: 'POST',
+    });
+  },
+};
+
 export default apiRequest;
 
