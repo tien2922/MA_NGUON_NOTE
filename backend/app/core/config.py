@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     jwt_secret_key: str = Field(..., alias="JWT_SECRET_KEY")
     jwt_algorithm: str = Field("HS256", alias="JWT_ALGORITHM")
     access_token_expire_minutes: int = Field(60 * 24, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
-    _cors_origins_raw: str | None = Field(None, alias="CORS_ORIGINS", exclude=True)
+    cors_origins_raw: str | None = Field(None, alias="CORS_ORIGINS", exclude=True)
     reminder_enabled: bool = Field(False, alias="REMINDER_ENABLED")
     smtp_host: str | None = Field(None, alias="SMTP_HOST")
     smtp_port: int | None = Field(None, alias="SMTP_PORT")
@@ -24,10 +24,10 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> List[str]:
         """Parse CORS_ORIGINS từ env var"""
-        if self._cors_origins_raw is None:
+        if self.cors_origins_raw is None:
             return ["*"]
         
-        cors_str = self._cors_origins_raw.strip()
+        cors_str = self.cors_origins_raw.strip()
         if not cors_str:
             return ["*"]
         
