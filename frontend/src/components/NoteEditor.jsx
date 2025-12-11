@@ -10,21 +10,21 @@ export default function NoteEditor({ note, onSave, onClose, onUploadImage }) {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  const toLocalInput = (isoString) => {
+    if (!isoString) return "";
+    const dt = new Date(isoString);
+    if (Number.isNaN(dt.getTime())) return "";
+    const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  };
+
   useEffect(() => {
     if (note) {
       setTitle(note.title || "");
       setContent(note.content || "");
       setColor(note.color || "#ffffff");
       setImageUrl(note.image_url || "");
-      if (note.reminder_at) {
-        const dt = new Date(note.reminder_at);
-        const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
-          .toISOString()
-          .slice(0, 16);
-        setReminderAt(local);
-      } else {
-        setReminderAt("");
-      }
+      setReminderAt(toLocalInput(note.reminder_at));
     } else {
       setTitle("");
       setContent("");
