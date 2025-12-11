@@ -1,8 +1,7 @@
 import json
-import os
 from pydantic_settings import BaseSettings
-from pydantic import Field, model_validator
-from typing import List, Union
+from pydantic import Field, computed_field
+from typing import List
 
 
 class Settings(BaseSettings):
@@ -11,7 +10,7 @@ class Settings(BaseSettings):
     jwt_secret_key: str = Field(..., alias="JWT_SECRET_KEY")
     jwt_algorithm: str = Field("HS256", alias="JWT_ALGORITHM")
     access_token_expire_minutes: int = Field(60 * 24, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
-    cors_origins: List[str] = Field(default_factory=lambda: ["*"], alias="CORS_ORIGINS")
+    _cors_origins_raw: str | None = Field(None, alias="CORS_ORIGINS", exclude=True)
     reminder_enabled: bool = Field(False, alias="REMINDER_ENABLED")
     smtp_host: str | None = Field(None, alias="SMTP_HOST")
     smtp_port: int | None = Field(None, alias="SMTP_PORT")
@@ -21,45 +20,28 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = Field(True, alias="SMTP_USE_TLS")
     smtp_use_ssl: bool = Field(False, alias="SMTP_USE_SSL")
 
-    @model_validator(mode="before")
-    @classmethod
-    def parse_cors_origins(cls, data: Union[dict, object]) -> dict:
-        """Parse CORS_ORIGINS từ env var trước khi validation"""
-        if isinstance(data, dict):
-            cors_value = data.get("CORS_ORIGINS") or data.get("cors_origins")
-            
-            # Nếu không có giá trị, dùng default
-            if cors_value is None:
-                data["CORS_ORIGINS"] = ["*"]
-                return data
-            
-            # Nếu đã là list, giữ nguyên
-            if isinstance(cors_value, list):
-                data["CORS_ORIGINS"] = cors_value
-                return data
-            
-            # Parse từ string
-            if isinstance(cors_value, str):
-                cors_str = cors_value.strip()
-                if not cors_str:
-                    data["CORS_ORIGINS"] = ["*"]
-                    return data
-                
-                # Thử parse JSON
-                try:
-                    parsed = json.loads(cors_str)
-                    if isinstance(parsed, list):
-                        data["CORS_ORIGINS"] = parsed
-                        return data
-                except json.JSONDecodeError:
-                    pass
-                
-                # Split bằng comma
-                origins = [origin.strip() for origin in cors_str.split(",") if origin.strip()]
-                data["CORS_ORIGINS"] = origins if origins else ["*"]
-                return data
+    @computed_field
+    @property
+    def cors_origins(self) -> List[str]:
+        """Parse CORS_ORIGINS từ env var"""
+        if self._cors_origins_raw is None:
+            return ["*"]
         
-        return data
+        cors_str = self._cors_origins_raw.strip()
+        if not cors_str:
+            return ["*"]
+        
+        # Thử parse JSON
+        try:
+            parsed = json.loads(cors_str)
+            if isinstance(parsed, list):
+                return parsed
+        except json.JSONDecodeError:
+            pass
+        
+        # Split bằng comma
+        origins = [origin.strip() for origin in cors_str.split(",") if origin.strip()]
+        return origins if origins else ["*"]
 
     class Config:
         env_file = ".env"
