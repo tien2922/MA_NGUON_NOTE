@@ -22,8 +22,17 @@ class Settings(BaseSettings):
 
     @field_validator("cors_origins", mode="before")
     @classmethod
-    def parse_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+    def parse_cors_origins(cls, v: Union[str, List[str], None]) -> List[str]:
+        # Xử lý None hoặc empty string
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return ["*"]
+        
         if isinstance(v, str):
+            # Xử lý string rỗng sau khi strip
+            v = v.strip()
+            if not v:
+                return ["*"]
+            
             try:
                 # Thử parse JSON string
                 parsed = json.loads(v)
@@ -31,8 +40,13 @@ class Settings(BaseSettings):
                     return parsed
             except json.JSONDecodeError:
                 # Nếu không phải JSON, split bằng comma
-                return [origin.strip() for origin in v.split(",") if origin.strip()]
-        return v if isinstance(v, list) else ["*"]
+                origins = [origin.strip() for origin in v.split(",") if origin.strip()]
+                return origins if origins else ["*"]
+        
+        if isinstance(v, list):
+            return v if v else ["*"]
+        
+        return ["*"]
 
     class Config:
         env_file = ".env"
