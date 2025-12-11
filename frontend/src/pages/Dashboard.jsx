@@ -432,6 +432,12 @@ export default function Dashboard() {
                       <div className="flex items-center gap-2 text-xs text-text-secondary-light dark:text-text-secondary-dark">
                         <span className="material-symbols-outlined text-sm">schedule</span>
                         <span>{formatDateDisplay(note.updated_at)}</span>
+                        {note.reminder_at && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-2 py-1 border border-amber-100">
+                            <span className="material-symbols-outlined text-sm">notifications</span>
+                            {formatDateDisplay(note.reminder_at)}
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex gap-3">
