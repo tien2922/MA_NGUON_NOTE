@@ -41,6 +41,45 @@ async def create_share_link(
     return schemas.ShareLinkOut(token=token, expires_at=expires_at, url=url)
 
 
+@router.get("/public/{token}", response_model=schemas.PublicNoteOut)
+async def read_shared_note(
+    token: str,
+    session: AsyncSession = Depends(get_session),
+):
+    """Đọc ghi chú qua share token công khai"""
+    result = await session.execute(
+        select(ShareLink)
+        .where(ShareLink.token == token)
+        .options(selectinload(ShareLink.note).selectinload(Note.tags))
+    )
+    link = result.scalar_one_or_none()
+    if not link:
+        raise HTTPException(status_code=404, detail="Share link not found")
+
+    if link.expires_at and link.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=410, detail="Share link expired")
+
+    note = link.note
+    if not note or note.deleted_at is not None:
+        raise HTTPException(status_code=404, detail="Note not available")
+    if not link.is_public:
+        raise HTTPException(status_code=403, detail="This link is private")
+
+    return schemas.PublicNoteOut(
+        id=note.id,
+        title=note.title,
+        content=note.content,
+        is_markdown=note.is_markdown,
+        color=note.color,
+        image_url=note.image_url,
+        reminder_at=note.reminder_at,
+        is_public=note.is_public,
+        created_at=note.created_at,
+        updated_at=note.updated_at,
+        tags=note.tags,
+    )
+
+
 @router.post("/notes/{note_id}/user", response_model=schemas.ShareRequestOut, status_code=status.HTTP_201_CREATED)
 async def share_note_with_user(
     note_id: int,

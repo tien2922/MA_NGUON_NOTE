@@ -216,6 +216,19 @@ export const foldersAPI = {
   },
 };
 
+// Tags API
+export const tagsAPI = {
+  getTags: async () => {
+    return apiRequest('/tags');
+  },
+  createTag: async (name) => {
+    return apiRequest('/tags', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  },
+};
+
 // Share API
 export const shareAPI = {
   // Share note với user
@@ -224,6 +237,24 @@ export const shareAPI = {
       method: 'POST',
       body: JSON.stringify({ username }),
     });
+  },
+
+  // Tạo public share link
+  createPublicLink: async (noteId, expiresInMinutes = null, isPublic = true) => {
+    return apiRequest(`/share/notes/${noteId}`, {
+      method: 'POST',
+      body: JSON.stringify({ expires_in_minutes: expiresInMinutes, is_public: isPublic }),
+    });
+  },
+
+  // Lấy note công khai qua token
+  getPublicNote: async (token) => {
+    const response = await fetch(`${API_URL}/share/public/${token}`);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Không xem được ghi chú công khai' }));
+      throw new Error(error.detail || 'Không xem được ghi chú công khai');
+    }
+    return response.json();
   },
 
   // Lấy danh sách share requests đang chờ
@@ -243,6 +274,14 @@ export const shareAPI = {
     return apiRequest(`/share/requests/${shareId}/reject`, {
       method: 'POST',
     });
+  },
+};
+
+// Search API
+export const searchAPI = {
+  searchNotes: async (query) => {
+    const q = encodeURIComponent(query);
+    return apiRequest(`/search?q=${q}`);
   },
 };
 

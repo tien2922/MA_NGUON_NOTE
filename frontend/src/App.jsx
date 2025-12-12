@@ -5,6 +5,7 @@ import Register from "./pages/Register";
 import MoreInfo from "./pages/MoreInfo";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
+import PublicNote from "./pages/PublicNote";
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
       <Route path="/timhieuthem" element={<MoreInfo />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/settings" element={<Settings />} />
+      <Route path="/s/:token" element={<PublicNote />} />
       <Route
         path="*"
         element={
