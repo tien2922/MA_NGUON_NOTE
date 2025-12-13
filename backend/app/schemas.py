@@ -136,3 +136,19 @@ class ShareRequestOut(BaseModel):
     responded_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
+
+
+class PublicNoteOut(BaseModel):
+    id: int
+    title: str
+    content: str
+    is_markdown: bool = True
+    color: Optional[str] = None
+    image_url: Optional[str] = None
+    reminder_at: Optional[datetime] = None
+    is_public: bool = True
+    created_at: datetime
+    updated_at: datetime
+    tags: List[TagOut] = Field(default_factory=list)
+
+    model_config = {"from_attributes": True}

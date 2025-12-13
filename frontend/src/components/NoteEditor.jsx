@@ -1,12 +1,25 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { buildFileUrl } from "../services/api";
 
-export default function NoteEditor({ note, selectedFolderId, onSave, onClose, onUploadImage }) {
+export default function NoteEditor({
+  note,
+  selectedFolderId,
+  onSave,
+  onClose,
+  onUploadImage,
+  availableTags = [],
+  onCreateTag,
+}) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [color, setColor] = useState("#ffffff");
   const [imageUrl, setImageUrl] = useState("");
   const [reminderAt, setReminderAt] = useState("");
+  const [selectedTagIds, setSelectedTagIds] = useState([]);
+  const [newTagName, setNewTagName] = useState("");
+  const [creatingTag, setCreatingTag] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -29,6 +42,7 @@ export default function NoteEditor({ note, selectedFolderId, onSave, onClose, on
       setColor(note.color || "#ffffff");
       setImageUrl(note.image_url || "");
       setReminderAt(toLocalInput(note.reminder_at));
+      setSelectedTagIds(note.tags ? note.tags.map((t) => t.id) : []);
       lastSavedRef.current = { title: note.title || "", content: note.content || "" };
     } else {
       setTitle("");
@@ -36,6 +50,7 @@ export default function NoteEditor({ note, selectedFolderId, onSave, onClose, on
       setColor("#ffffff");
       setImageUrl("");
       setReminderAt("");
+      setSelectedTagIds([]);
       lastSavedRef.current = { title: "", content: "" };
     }
     setAutoSaveStatus("");
@@ -65,7 +80,7 @@ export default function NoteEditor({ note, selectedFolderId, onSave, onClose, on
         content: currentContent,
         is_markdown: true,
         folder_id: note.folder_id || selectedFolderId || null,
-        tag_ids: [],
+        tag_ids: selectedTagIds,
         is_public: note.is_public || false,
         color,
         image_url: imageUrl || null,
@@ -115,7 +130,7 @@ export default function NoteEditor({ note, selectedFolderId, onSave, onClose, on
         content: content.trim(),
         is_markdown: true,
         folder_id: note?.folder_id || selectedFolderId || null,
-        tag_ids: [],
+        tag_ids: selectedTagIds,
         is_public: note?.is_public || false,
         color,
         image_url: imageUrl || null,
@@ -125,21 +140,6 @@ export default function NoteEditor({ note, selectedFolderId, onSave, onClose, on
     } finally {
       setLoading(false);
     }
-  };
-
-  // Markdown preview renderer (simple version)
-  const renderMarkdown = (text) => {
-    if (!text) return "";
-    
-    return text
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-      .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-      .replace(/`(.*?)`/gim, '<code>$1</code>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2">$1</a>')
-      .replace(/\n/gim, '<br>');
   };
 
   const handleUpload = async (file) => {
@@ -153,6 +153,32 @@ export default function NoteEditor({ note, selectedFolderId, onSave, onClose, on
     } finally {
       setUploading(false);
     }
+  };
+
+  const toggleTag = (tagId) => {
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+    );
+  };
+
+  const handleCreateTag = async () => {
+    if (!onCreateTag || !newTagName.trim()) return;
+    try {
+      setCreatingTag(true);
+      const created = await onCreateTag(newTagName.trim());
+      setSelectedTagIds((prev) => [...prev, created.id]);
+      setNewTagName("");
+    } catch (err) {
+      alert("Không tạo được tag: " + err.message);
+    } finally {
+      setCreatingTag(false);
+    }
+  };
+
+  const insertText = (prefix, suffix = "") => {
+    const selectionStart = 0;
+    // đơn giản chèn ở cuối nội dung
+    setContent((prev) => `${prev}${prev ? "\n" : ""}${prefix}${suffix}`);
   };
 
   return (
@@ -212,21 +238,53 @@ export default function NoteEditor({ note, selectedFolderId, onSave, onClose, on
               />
             </div>
 
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark mb-2">
-                Nội dung {note && <span className="text-xs text-text-secondary-light dark:text-text-secondary-dark">(Markdown được hỗ trợ)</span>}
-              </label>
-              {showPreview && note ? (
-                <div
-                  className="w-full h-64 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 overflow-y-auto prose prose-sm max-w-none dark:prose-invert"
-                  dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
-                />
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark">
+                  Nội dung (Markdown)
+                </label>
+                <div className="flex items-center gap-1 text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                  <button
+                    type="button"
+                    className="px-2 py-1 rounded-md hover:bg-primary/10"
+                    onClick={() => insertText("## Tiêu đề")}
+                  >
+                    H2
+                  </button>
+                  <button
+                    type="button"
+                    className="px-2 py-1 rounded-md hover:bg-primary/10"
+                    onClick={() => insertText("**đậm**")}
+                  >
+                    Bold
+                  </button>
+                  <button
+                    type="button"
+                    className="px-2 py-1 rounded-md hover:bg-primary/10"
+                    onClick={() => insertText("*nghiêng*")}
+                  >
+                    Italic
+                  </button>
+                  <button
+                    type="button"
+                    className="px-2 py-1 rounded-md hover:bg-primary/10"
+                    onClick={() => insertText("`code`")}
+                  >
+                    Code
+                  </button>
+                </div>
+              </div>
+
+              {showPreview ? (
+                <div className="w-full h-64 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 overflow-y-auto prose prose-sm max-w-none dark:prose-invert">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{content || "_(Trống)_"}</ReactMarkdown>
+                </div>
               ) : (
                 <textarea
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
                   className="w-full h-64 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 text-text-primary-light dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary resize-none font-mono text-sm"
-                  placeholder="Nhập nội dung ghi chú... (Markdown được hỗ trợ: **bold**, *italic*, # heading, `code`)"
+                  placeholder="Nhập nội dung ghi chú... (Markdown: **bold**, *italic*, # heading, `code`)"
                   disabled={loading}
                 />
               )}
@@ -297,6 +355,58 @@ export default function NoteEditor({ note, selectedFolderId, onSave, onClose, on
                   </div>
                 )}
               </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark">
+                  Tags
+                </label>
+                <span className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                  Chọn nhiều tags để phân loại
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {availableTags.length === 0 && (
+                  <span className="text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                    Chưa có tag nào
+                  </span>
+                )}
+                {availableTags.map((tag) => (
+                  <button
+                    type="button"
+                    key={tag.id}
+                    onClick={() => toggleTag(tag.id)}
+                    className={`px-3 py-1 rounded-full text-sm border transition-colors ${
+                      selectedTagIds.includes(tag.id)
+                        ? "bg-primary text-white border-primary"
+                        : "border-gray-300 dark:border-gray-700 text-text-secondary-light dark:text-text-secondary-dark hover:bg-primary/10 hover:text-primary"
+                    }`}
+                  >
+                    #{tag.name}
+                  </button>
+                ))}
+              </div>
+              {onCreateTag && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newTagName}
+                    onChange={(e) => setNewTagName(e.target.value)}
+                    placeholder="Tên tag mới..."
+                    className="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 text-text-primary-light dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary"
+                    disabled={creatingTag}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreateTag}
+                    disabled={creatingTag || !newTagName.trim()}
+                    className="px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50"
+                  >
+                    {creatingTag ? "Đang tạo..." : "Thêm tag"}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

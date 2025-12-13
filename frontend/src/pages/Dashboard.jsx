@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { notesAPI, buildFileUrl } from "../services/api";
+import { notesAPI, buildFileUrl, searchAPI, tagsAPI } from "../services/api";
 import NoteEditor from "../components/NoteEditor";
 import FolderTree from "../components/FolderTree";
 import ShareNoteModal from "../components/ShareNoteModal";
@@ -9,8 +9,11 @@ import NotificationsPanel from "../components/NotificationsPanel";
 
 export default function Dashboard() {
   const [notes, setNotes] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
   const [view, setView] = useState("all"); // all | trash
@@ -27,6 +30,7 @@ export default function Dashboard() {
   const [shareModal, setShareModal] = useState({ open: false, note: null });
   const { logout, isAuthenticated, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
     // Đợi auth loading xong mới check
@@ -37,7 +41,40 @@ export default function Dashboard() {
       return;
     }
     fetchNotes(view);
+    fetchTags();
   }, [isAuthenticated, authLoading, navigate, view, selectedFolderId]);
+
+  useEffect(() => {
+    if (view === "trash") {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+      return;
+    }
+    setSearchLoading(true);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const data = await searchAPI.searchNotes(q);
+        setSearchResults(data);
+      } catch (error) {
+        console.error("Search error:", error);
+        setToast({ open: true, type: "error", message: "Không tìm kiếm được, thử lại sau" });
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [searchQuery, view]);
 
   const fetchNotes = async (mode = "all") => {
     try {
@@ -60,6 +97,15 @@ export default function Dashboard() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTags = async () => {
+    try {
+      const data = await tagsAPI.getTags();
+      setTags(data);
+    } catch (error) {
+      console.error("Error fetching tags:", error);
     }
   };
 
@@ -91,15 +137,20 @@ export default function Dashboard() {
 
   // Tìm kiếm notes
   const filteredNotes = useMemo(() => {
+    const baseList =
+      view !== "trash" && searchQuery.trim().length >= 2 ? searchResults : notes;
     const lower = searchQuery.toLowerCase();
-    let result = notes.filter((note) => {
+    let result = baseList.filter((note) => {
+      // Nếu đang dùng search API, đã lọc server theo q; chỉ apply folder filter và các toggle
       const title = (note.title || "").toLowerCase();
       const body = (note.content || "").toLowerCase();
-      const match = title.includes(lower) || body.includes(lower);
+      const match = searchQuery.trim().length >= 2 ? true : title.includes(lower) || body.includes(lower);
       const imageOk = hasImageOnly ? !!(note.image_url && note.image_url.length > 0) : true;
       const pinOk =
         pinFilter === "all" ? true : pinFilter === "pinned" ? note.is_pinned : !note.is_pinned;
-      return match && imageOk && pinOk;
+      const folderOk =
+        selectedFolderId === null || note.folder_id === selectedFolderId;
+      return match && imageOk && pinOk && folderOk;
     });
 
     if (sortBy === "title") {
@@ -120,6 +171,12 @@ export default function Dashboard() {
   const handleCreateNote = () => {
     setEditingNote(null);
     setShowNoteEditor(true);
+  };
+
+  const handleCreateTag = async (name) => {
+    const created = await tagsAPI.createTag(name);
+    setTags((prev) => [...prev, created]);
+    return created;
   };
 
   const handleViewNote = (noteId) => {
@@ -173,9 +230,9 @@ export default function Dashboard() {
     try {
       if (editingNote) {
         // Cập nhật note
-        await notesAPI.updateNote(editingNote.id, noteData);
+        const updated = await notesAPI.updateNote(editingNote.id, noteData);
         // Cập nhật editingNote để sync với data mới
-        setEditingNote({ ...editingNote, ...noteData });
+        setEditingNote(updated);
       } else {
         // Tạo note mới
         const newNote = await notesAPI.createNote(noteData);
@@ -385,7 +442,7 @@ export default function Dashboard() {
               </div>
 
               {/* Search + stats */}
-              <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
+            <div className="grid gap-4 lg:grid-cols-[2fr,1fr]">
               <label className="flex flex-col min-w-40 h-12 w-full">
                   <div className="flex w-full flex-1 items-stretch rounded-full h-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 shadow-sm px-2">
                     <div className="text-text-secondary-light dark:text-text-secondary-dark flex items-center justify-center pl-2 pr-1">
@@ -397,6 +454,11 @@ export default function Dashboard() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
+                  {searchLoading && (
+                    <div className="flex items-center pr-3 text-xs text-text-secondary-light dark:text-text-secondary-dark">
+                      Đang tìm...
+                    </div>
+                  )}
                 </div>
               </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -516,6 +578,18 @@ export default function Dashboard() {
                           <span className="px-2 py-1 rounded-full bg-primary/10 text-primary font-semibold">
                             {note.image_url ? "Có ảnh" : "Văn bản"}
                           </span>
+                          {note.tags && note.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {note.tags.map((tag) => (
+                                <span
+                                  key={tag.id}
+                                  className="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-text-secondary-light dark:text-text-secondary-dark"
+                                >
+                                  #{tag.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       {view === "trash" ? (
                           <div className="flex gap-2">
@@ -595,6 +669,8 @@ export default function Dashboard() {
             setEditingNote(null);
           }}
           onUploadImage={notesAPI.uploadImage}
+          availableTags={tags}
+          onCreateTag={handleCreateTag}
         />
       )}
 
