@@ -1,7 +1,7 @@
 import json
 from pydantic_settings import BaseSettings
 from pydantic import Field, computed_field
-from typing import List
+from typing import List, Optional
 
 
 class Settings(BaseSettings):
@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     smtp_from: str | None = Field(None, alias="SMTP_FROM")
     smtp_use_tls: bool = Field(True, alias="SMTP_USE_TLS")
     smtp_use_ssl: bool = Field(False, alias="SMTP_USE_SSL")
+    aws_access_key_id: Optional[str] = Field(None, alias="AWS_ACCESS_KEY_ID")
+    aws_secret_access_key: Optional[str] = Field(None, alias="AWS_SECRET_ACCESS_KEY")
+    aws_region: Optional[str] = Field(None, alias="AWS_REGION")
+    s3_bucket: Optional[str] = Field(None, alias="S3_BUCKET")
 
     @computed_field
     @property
@@ -42,6 +46,11 @@ class Settings(BaseSettings):
         # Split bằng comma
         origins = [origin.strip() for origin in cors_str.split(",") if origin.strip()]
         return origins if origins else ["*"]
+
+    @computed_field
+    @property
+    def s3_enabled(self) -> bool:
+        return bool(self.aws_access_key_id and self.aws_secret_access_key and self.aws_region and self.s3_bucket)
 
     class Config:
         env_file = ".env"

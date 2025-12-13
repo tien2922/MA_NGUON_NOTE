@@ -13,6 +13,8 @@ from .. import schemas
 from ..database import get_session
 from ..deps import get_current_user
 from ..models import Folder, Note, Tag, User, NoteShare
+from ..core.config import settings
+from ..core.storage import upload_image_to_s3
 
 router = APIRouter(prefix="/notes", tags=["notes"])
 
@@ -268,32 +270,34 @@ async def upload_image(
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Chỉ cho phép tải lên ảnh")
 
-    # Tìm đường dẫn uploads: có thể ở backend/uploads hoặc ../backend/uploads
+    ext = os.path.splitext(file.filename)[1]
+    filename = f"{uuid4().hex}{ext}"
+
+    # Nếu cấu hình S3 đầy đủ -> upload S3, ngược lại fallback local
+    if settings.s3_enabled:
+        try:
+            url = await upload_image_to_s3(file, filename, file.content_type)
+            return {"url": url}
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Upload S3 thất bại: {exc}")
+
+    # Fallback lưu local như cũ
     _current_file = os.path.abspath(__file__)
     _routers_dir = os.path.dirname(_current_file)  # Thư mục routers/
     _app_dir = os.path.dirname(_routers_dir)  # Thư mục app/
     _backend_dir = os.path.dirname(_app_dir)  # Thư mục backend/
     _project_root = os.path.dirname(_backend_dir)  # Thư mục gốc
-    
-    # Thử tìm uploads ở backend/uploads trước
     uploads_dir = os.path.join(_backend_dir, "uploads")
     if not os.path.exists(uploads_dir):
-        # Nếu không có, thử ở thư mục gốc/backend/uploads
         uploads_dir = os.path.join(_project_root, "backend", "uploads")
-    
     os.makedirs(uploads_dir, exist_ok=True)
 
-    ext = os.path.splitext(file.filename)[1]
-    filename = f"{uuid4().hex}{ext}"
-    file_path = os.path.join(uploads_dir, filename)
-
-    # Save file asynchronously
     import aiofiles
 
+    file_path = os.path.join(uploads_dir, filename)
     async with aiofiles.open(file_path, "wb") as f:
         while chunk := await file.read(1024 * 1024):
             await f.write(chunk)
 
-    url = f"/uploads/{filename}"
-    return {"url": url}
+    return {"url": f"/uploads/{filename}"}
 
