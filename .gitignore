@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+.env
+.env.*
+venv/
+.venv/
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+bun.lockb
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+Thumbs.db
+
+# Build artifacts
+*.log
+
+# Database data
+postgres_data/
+
+# Uploads (user data)
+backend/uploads/
+backend/backend/uploads/
+
+# Deployment configs
+DEPLOY_INSTRUCTIONS.txt
+.env.production
+.env.local
+
+
