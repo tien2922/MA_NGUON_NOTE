@@ -1,0 +1,93 @@
+@startuml Database Schema - Smart Notes
+
+skinparam linetype ortho
+
+entity users {
+  * id : INTEGER <<PK>>
+  --
+  * username : VARCHAR(100) <<UK>>
+  * email : VARCHAR(255) <<UK>>
+  * hashed_password : VARCHAR(255)
+  * created_at : TIMESTAMP
+}
+
+entity folders {
+  * id : INTEGER <<PK>>
+  --
+  * name : VARCHAR(200)
+  parent_id : INTEGER <<FK, nullable>>
+  * user_id : INTEGER <<FK>>
+  * created_at : TIMESTAMP
+}
+
+entity notes {
+  * id : INTEGER <<PK>>
+  --
+  * title : VARCHAR(255)
+  * content : TEXT
+  * is_markdown : BOOLEAN
+  folder_id : INTEGER <<FK, nullable>>
+  * user_id : INTEGER <<FK>>
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+  * is_pinned : BOOLEAN
+  * is_public : BOOLEAN
+  reminder_at : TIMESTAMP <<nullable>>
+  * reminder_sent : BOOLEAN
+  color : VARCHAR(20) <<nullable>>
+  image_url : VARCHAR(500) <<nullable>>
+  deleted_at : TIMESTAMP <<nullable>>
+  search_vector : TSVECTOR
+}
+
+entity tags {
+  * id : INTEGER <<PK>>
+  --
+  * name : VARCHAR(100)
+  * user_id : INTEGER <<FK>>
+  * created_at : TIMESTAMP
+}
+
+entity notes_tags {
+  * note_id : INTEGER <<PK, FK>>
+  * tag_id : INTEGER <<PK, FK>>
+}
+
+entity share_links {
+  * id : INTEGER <<PK>>
+  --
+  * note_id : INTEGER <<FK>>
+  * token : VARCHAR(100) <<UK>>
+  expires_at : TIMESTAMP <<nullable>>
+  * created_at : TIMESTAMP
+  * is_public : BOOLEAN
+}
+
+entity note_shares {
+  * id : INTEGER <<PK>>
+  --
+  * note_id : INTEGER <<FK>>
+  * shared_by_user_id : INTEGER <<FK>>
+  * shared_with_user_id : INTEGER <<FK>>
+  * status : VARCHAR(20)
+  * created_at : TIMESTAMP
+  responded_at : TIMESTAMP <<nullable>>
+}
+
+' Relationships
+users ||--o{ folders : "owns"
+users ||--o{ notes : "owns"
+users ||--o{ tags : "owns"
+users ||--o{ note_shares : "shared_by"
+users ||--o{ note_shares : "shared_with"
+
+folders ||--o{ folders : "parent"
+folders ||--o{ notes : "contains"
+
+notes ||--o{ notes_tags : ""
+tags ||--o{ notes_tags : ""
+
+notes ||--o{ share_links : "has"
+notes ||--o{ note_shares : "shared"
+
+@enduml
