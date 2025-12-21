@@ -26,6 +26,7 @@ export default function NoteEditor({
   const [autoSaveStatus, setAutoSaveStatus] = useState(""); // "saving" | "saved" | ""
   const autoSaveTimeoutRef = useRef(null);
   const lastSavedRef = useRef({ title: "", content: "" });
+  const editorRef = useRef(null);
 
   const toLocalInput = (isoString) => {
     if (!isoString) return "";
@@ -33,6 +34,34 @@ export default function NoteEditor({
     if (Number.isNaN(dt.getTime())) return "";
     const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000);
     return local.toISOString().slice(0, 16);
+  };
+
+  // Convert Markdown to HTML (đơn giản)
+  const markdownToHtml = (md) => {
+    if (!md) return "";
+    let html = md
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.*?)\*/g, "<em>$1</em>")
+      .replace(/\n/g, "<br>");
+    return html;
+  };
+
+  // Convert HTML to Markdown (đơn giản)
+  const htmlToMarkdown = (html) => {
+    if (!html) return "";
+    let md = html
+      .replace(/<strong>(.*?)<\/strong>/gi, "**$1**")
+      .replace(/<b>(.*?)<\/b>/gi, "**$1**")
+      .replace(/<em>(.*?)<\/em>/gi, "*$1*")
+      .replace(/<i>(.*?)<\/i>/gi, "*$1*")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<p>(.*?)<\/p>/gi, "$1\n\n")
+      .replace(/<div>(.*?)<\/div>/gi, "$1\n")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&amp;/gi, "&");
+    return md.trim();
   };
 
   useEffect(() => {
@@ -54,15 +83,24 @@ export default function NoteEditor({
       lastSavedRef.current = { title: "", content: "" };
     }
     setAutoSaveStatus("");
+
+    // Update editor content khi content thay đổi
+    setTimeout(() => {
+      if (editorRef.current) {
+        const contentToShow = note?.content || "";
+        const htmlContent = markdownToHtml(contentToShow);
+        editorRef.current.innerHTML = htmlContent || "";
+      }
+    }, 0);
   }, [note]);
 
   // Auto-save function với debounce
   const autoSave = useCallback(async () => {
     if (!note) return; // Chỉ auto-save khi đang edit note cũ, không phải tạo mới
-    
+
     const currentTitle = title.trim();
     const currentContent = content.trim();
-    
+
     // Kiểm tra xem có thay đổi không
     if (
       currentTitle === lastSavedRef.current.title &&
@@ -98,7 +136,7 @@ export default function NoteEditor({
   // Debounce auto-save khi title hoặc content thay đổi
   useEffect(() => {
     if (!note) return; // Chỉ auto-save khi edit note cũ
-    
+
     // Clear timeout cũ
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current);
@@ -175,10 +213,32 @@ export default function NoteEditor({
     }
   };
 
-  const insertText = (prefix, suffix = "") => {
-    const selectionStart = 0;
-    // đơn giản chèn ở cuối nội dung
-    setContent((prev) => `${prev}${prev ? "\n" : ""}${prefix}${suffix}`);
+
+  const formatText = (formatType) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    editor.focus();
+
+    if (formatType === "bold") {
+      document.execCommand("bold", false, null);
+    } else if (formatType === "italic") {
+      document.execCommand("italic", false, null);
+    }
+
+    // Update content state từ HTML
+    const htmlContent = editor.innerHTML;
+    const markdownContent = htmlToMarkdown(htmlContent);
+    setContent(markdownContent);
+  };
+
+  const handleEditorInput = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const htmlContent = editor.innerHTML;
+    const markdownContent = htmlToMarkdown(htmlContent);
+    setContent(markdownContent);
   };
 
   return (
@@ -191,9 +251,8 @@ export default function NoteEditor({
               {note ? "Chỉnh sửa ghi chú" : "Tạo ghi chú mới"}
             </h2>
             {note && autoSaveStatus && (
-              <span className={`text-xs ${
-                autoSaveStatus === "saving" ? "text-yellow-500" : "text-green-500"
-              }`}>
+              <span className={`text-xs ${autoSaveStatus === "saving" ? "text-yellow-500" : "text-green-500"
+                }`}>
                 {autoSaveStatus === "saving" ? "Đang lưu..." : "Đã lưu"}
               </span>
             )}
@@ -202,11 +261,10 @@ export default function NoteEditor({
             {note && (
               <button
                 onClick={() => setShowPreview(!showPreview)}
-                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                  showPreview
-                    ? "bg-primary text-white"
-                    : "text-text-secondary-light dark:text-text-secondary-dark hover:bg-primary/10"
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${showPreview
+                  ? "bg-primary text-white"
+                  : "text-text-secondary-light dark:text-text-secondary-dark hover:bg-primary/10"
+                  }`}
               >
                 {showPreview ? "Chỉnh sửa" : "Xem trước"}
               </button>
@@ -241,36 +299,24 @@ export default function NoteEditor({
             <div className="flex-1 space-y-2">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-text-primary-light dark:text-text-primary-dark">
-                  Nội dung (Markdown)
+                  Nội dung
                 </label>
                 <div className="flex items-center gap-1 text-xs text-text-secondary-light dark:text-text-secondary-dark">
                   <button
                     type="button"
-                    className="px-2 py-1 rounded-md hover:bg-primary/10"
-                    onClick={() => insertText("## Tiêu đề")}
+                    className="px-2 py-1 rounded-md hover:bg-primary/10 hover:text-primary transition-colors"
+                    onClick={() => formatText("bold")}
+                    title="In đậm (Ctrl+B)"
                   >
-                    H2
+                    <span className="font-bold">B</span>
                   </button>
                   <button
                     type="button"
-                    className="px-2 py-1 rounded-md hover:bg-primary/10"
-                    onClick={() => insertText("**đậm**")}
+                    className="px-2 py-1 rounded-md hover:bg-primary/10 hover:text-primary transition-colors italic"
+                    onClick={() => formatText("italic")}
+                    title="In nghiêng (Ctrl+I)"
                   >
-                    Bold
-                  </button>
-                  <button
-                    type="button"
-                    className="px-2 py-1 rounded-md hover:bg-primary/10"
-                    onClick={() => insertText("*nghiêng*")}
-                  >
-                    Italic
-                  </button>
-                  <button
-                    type="button"
-                    className="px-2 py-1 rounded-md hover:bg-primary/10"
-                    onClick={() => insertText("`code`")}
-                  >
-                    Code
+                    <span className="italic">I</span>
                   </button>
                 </div>
               </div>
@@ -280,13 +326,30 @@ export default function NoteEditor({
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{content || "_(Trống)_"}</ReactMarkdown>
                 </div>
               ) : (
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="w-full h-64 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 text-text-primary-light dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary resize-none font-mono text-sm"
-                  placeholder="Nhập nội dung ghi chú... (Markdown: **bold**, *italic*, # heading, `code`)"
-                  disabled={loading}
-                />
+                <div className="relative">
+                  <div
+                    ref={editorRef}
+                    contentEditable={!loading}
+                    onInput={handleEditorInput}
+                    onBlur={handleEditorInput}
+                    className="w-full h-64 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900/40 text-text-primary-light dark:text-text-primary-dark focus:outline-none focus:ring-2 focus:ring-primary resize-none text-sm min-h-[256px] overflow-y-auto"
+                    style={{
+                      whiteSpace: "pre-wrap",
+                      wordWrap: "break-word"
+                    }}
+                    data-placeholder="Nhập nội dung ghi chú... (Nhấn B để in đậm, I để in nghiêng)"
+                  />
+                  <style>{`
+                    [contenteditable][data-placeholder]:empty:before {
+                      content: attr(data-placeholder);
+                      color: #9ca3af;
+                      pointer-events: none;
+                    }
+                    [contenteditable]:focus {
+                      outline: none;
+                    }
+                  `}</style>
+                </div>
               )}
             </div>
 
@@ -377,11 +440,10 @@ export default function NoteEditor({
                     type="button"
                     key={tag.id}
                     onClick={() => toggleTag(tag.id)}
-                    className={`px-3 py-1 rounded-full text-sm border transition-colors ${
-                      selectedTagIds.includes(tag.id)
-                        ? "bg-primary text-white border-primary"
-                        : "border-gray-300 dark:border-gray-700 text-text-secondary-light dark:text-text-secondary-dark hover:bg-primary/10 hover:text-primary"
-                    }`}
+                    className={`px-3 py-1 rounded-full text-sm border transition-colors ${selectedTagIds.includes(tag.id)
+                      ? "bg-primary text-white border-primary"
+                      : "border-gray-300 dark:border-gray-700 text-text-secondary-light dark:text-text-secondary-dark hover:bg-primary/10 hover:text-primary"
+                      }`}
                   >
                     #{tag.name}
                   </button>
