@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
+// trang dang nhap
 export default function Login() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -11,6 +12,7 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  // xu ly dang nhap
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");

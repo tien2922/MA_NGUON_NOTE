@@ -17,8 +17,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // kiem tra da dang nhap chua khi component mount
   useEffect(() => {
-    // Kiểm tra xem đã đăng nhập chưa khi component mount
     const fetchUser = async () => {
       const token = authAPI.getToken();
       if (token) {
@@ -39,6 +39,7 @@ export const AuthProvider = ({ children }) => {
     fetchUser();
   }, []);
 
+  // dang nhap
   const login = async (identifier, password) => {
     try {
       const data = await authAPI.login(identifier, password);
@@ -51,6 +52,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // dang ky
   const register = async (username, email, password) => {
     try {
       await authAPI.register(username, email, password);
@@ -61,6 +63,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // dang xuat
   const logout = () => {
     authAPI.logout();
     setUser(null);

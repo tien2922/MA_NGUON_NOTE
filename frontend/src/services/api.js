@@ -139,7 +139,7 @@ export const notesAPI = {
 
 // Auth API
 export const authAPI = {
-  // Đăng ký
+  // dang ky
   register: async (username, email, password) => {
     return apiRequest('/auth/register', {
       method: 'POST',
@@ -147,7 +147,7 @@ export const authAPI = {
     });
   },
 
-  // Đăng nhập
+  // dang nhap
   login: async (identifier, password) => {
     const formData = new URLSearchParams();
     formData.append('username', identifier); // OAuth2PasswordRequestForm dùng 'username'
@@ -171,20 +171,20 @@ export const authAPI = {
     return data;
   },
 
-  // Đăng xuất
+  // dang xuat
   logout: () => {
     removeToken();
   },
 
-  // Kiểm tra đã đăng nhập chưa
+  // kiem tra da dang nhap chua
   isAuthenticated: () => {
     return !!getToken();
   },
 
-  // Lấy token
+  // lay token
   getToken,
 
-  // Lấy thông tin user hiện tại
+  // lay thong tin user hien tai
   getCurrentUser: async () => {
     return apiRequest('/auth/me');
   },

@@ -11,6 +11,7 @@ from .models import User
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
+# xac thuc token va lay user hien tai
 async def get_current_user(
     token: str = Depends(oauth2_scheme), session: AsyncSession = Depends(get_session)
 ) -> User:

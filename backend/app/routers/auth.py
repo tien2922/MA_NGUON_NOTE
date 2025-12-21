@@ -16,6 +16,7 @@ from ..models import User
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+# dang ky
 @router.post("/register", response_model=schemas.UserOut, status_code=status.HTTP_201_CREATED)
 async def register(user_in: schemas.UserCreate, session: AsyncSession = Depends(get_session)):
     existing_email = await session.execute(select(User).where(User.email == user_in.email))
@@ -47,6 +48,7 @@ async def register(user_in: schemas.UserCreate, session: AsyncSession = Depends(
     return user
 
 
+# dang nhap
 @router.post("/token", response_model=schemas.Token)
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(), session: AsyncSession = Depends(get_session)
@@ -68,6 +70,7 @@ async def login_for_access_token(
     return {"access_token": token, "token_type": "bearer"}
 
 
+# lay thong tin user hien tai
 @router.get("/me", response_model=schemas.UserOut)
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     return current_user

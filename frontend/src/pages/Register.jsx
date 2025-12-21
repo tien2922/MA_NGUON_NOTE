@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
+// trang dang ky
 export default function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -14,6 +15,7 @@ export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  // xu ly dang ky
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
