@@ -17,6 +17,7 @@ export default function App() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/settings" element={<Settings />} />
       <Route path="/s/:token" element={<PublicNote />} />
+      <Route path="/share/public/:token" element={<PublicNote />} />
       <Route
         path="*"
         element={

@@ -11,13 +11,10 @@ from .database import Base, engine, AsyncSessionLocal
 from .routers import auth, folders, notes, search, share, tags
 from .reminder import reminder_worker
 
-# Cấu hình logging để hiển thị logs của reminder worker
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler()  # Hiển thị logs ra console
-    ]
+    handlers=[logging.StreamHandler()]
 )
 logger = logging.getLogger(__name__)
 
@@ -33,16 +30,9 @@ app.add_middleware(
 )
 
 # Static files for uploads
-# Tìm đường dẫn uploads: có thể ở backend/uploads hoặc ../backend/uploads
-_current_dir = os.path.dirname(os.path.abspath(__file__))  # Thư mục app/
-_backend_dir = os.path.dirname(_current_dir)  # Thư mục backend/
-_project_root = os.path.dirname(_backend_dir)  # Thư mục gốc
-
-# Thử tìm uploads ở backend/uploads trước
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_backend_dir = os.path.dirname(_current_dir)
 uploads_dir = os.path.join(_backend_dir, "uploads")
-if not os.path.exists(uploads_dir):
-    # Nếu không có, thử ở thư mục gốc/backend/uploads
-    uploads_dir = os.path.join(_project_root, "backend", "uploads")
 
 os.makedirs(uploads_dir, exist_ok=True)
 logger.info(f"📁 Uploads directory: {uploads_dir}")
@@ -54,15 +44,14 @@ async def on_startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
-    # Kiểm tra và khởi động reminder worker
     if settings.reminder_enabled and settings.smtp_host:
-        logger.info("✅ Reminder enabled và SMTP đã cấu hình - Khởi động reminder worker")
+        logger.info("✅ Reminder enabled - Khởi động reminder worker")
         app.state.reminder_task = asyncio.create_task(reminder_worker(AsyncSessionLocal))
     else:
         if not settings.reminder_enabled:
-            logger.warning("⚠️  REMINDER_ENABLED=false - Reminder worker KHÔNG chạy")
+            logger.warning("⚠️  REMINDER_ENABLED=false - Reminder worker không chạy")
         if not settings.smtp_host:
-            logger.warning("⚠️  SMTP_HOST chưa cấu hình - Reminder worker KHÔNG chạy")
+            logger.warning("⚠️  SMTP_HOST chưa cấu hình - Reminder worker không chạy")
 
 
 @app.get("/")

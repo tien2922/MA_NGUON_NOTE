@@ -37,7 +37,10 @@ export default function ShareNoteModal({ note, onClose, onSuccess }) {
     try {
       const payloadMinutes = expiresInMinutes ? Number(expiresInMinutes) : null;
       const data = await shareAPI.createPublicLink(note.id, payloadMinutes, true);
-      setPublicLink(data.url);
+      // Chuyển đổi URL từ backend sang frontend
+      const backendUrl = new URL(data.url);
+      const frontendUrl = `${window.location.origin}/share/public/${backendUrl.pathname.split('/').pop()}`;
+      setPublicLink(frontendUrl);
     } catch (err) {
       setError(err.message || "Không tạo được link công khai");
     } finally {

@@ -16,15 +16,15 @@ export default function Dashboard() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
-  const [view, setView] = useState("all"); // all | trash
-  const [sortBy, setSortBy] = useState("recent"); // recent | title
+  const [view, setView] = useState("all");
+  const [sortBy, setSortBy] = useState("recent");
   const [hasImageOnly, setHasImageOnly] = useState(false);
-  const [pinFilter, setPinFilter] = useState("all"); // all | pinned | unpinned
+  const [pinFilter, setPinFilter] = useState("all");
   const [selectedFolderId, setSelectedFolderId] = useState(null);
   const [confirmModal, setConfirmModal] = useState({
     open: false,
     noteId: null,
-    mode: "trash", // trash | delete
+    mode: "trash",
   });
   const [toast, setToast] = useState({ open: false, type: "success", message: "" });
   const [shareModal, setShareModal] = useState({ open: false, note: null });
@@ -33,7 +33,6 @@ export default function Dashboard() {
   const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
-    // Đợi auth loading xong mới check
     if (authLoading) return;
     
     if (!isAuthenticated) {

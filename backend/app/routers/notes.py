@@ -53,7 +53,6 @@ async def list_notes(
 ):
     await _purge_deleted(session)
     
-    # Lấy notes của user
     query = (
         select(Note)
         .where(Note.user_id == current_user.id)
@@ -67,7 +66,6 @@ async def list_notes(
     result = await session.execute(query)
     user_notes = result.scalars().all()
     
-    # Lấy shared notes đã accepted
     shared_query = (
         select(Note)
         .join(NoteShare, NoteShare.note_id == Note.id)
@@ -85,14 +83,12 @@ async def list_notes(
     shared_result = await session.execute(shared_query)
     shared_notes = shared_result.scalars().all()
     
-    # Kết hợp và loại bỏ trùng lặp (nếu user share note của chính mình)
     all_notes = list(user_notes)
     note_ids = {note.id for note in user_notes}
     for note in shared_notes:
         if note.id not in note_ids:
             all_notes.append(note)
     
-    # Sắp xếp
     all_notes.sort(key=lambda n: (not n.is_pinned, n.updated_at), reverse=True)
     
     return all_notes
@@ -156,7 +152,6 @@ async def create_note(
     )
     session.add(note)
     await session.commit()
-    # Reload with relationships to avoid lazy load in response (async safe)
     result = await session.execute(
         select(Note)
         .where(Note.id == note.id)
@@ -189,7 +184,6 @@ async def update_note(
         note.is_public = note_in.is_public
     if note_in.reminder_at is not None:
         note.reminder_at = note_in.reminder_at
-        # Reset reminder_sent khi có reminder mới hoặc xóa reminder
         note.reminder_sent = False if note_in.reminder_at else False
     if note_in.is_pinned is not None:
         note.is_pinned = note_in.is_pinned
@@ -202,7 +196,6 @@ async def update_note(
 
     session.add(note)
     await session.commit()
-    # Reload with relationships to avoid lazy load in response (async safe)
     result = await session.execute(
         select(Note)
         .where(Note.id == note.id)
@@ -266,14 +259,12 @@ async def upload_image(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
 ):
-    # Simple validation
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Chỉ cho phép tải lên ảnh")
 
     ext = os.path.splitext(file.filename)[1]
     filename = f"{uuid4().hex}{ext}"
 
-    # Nếu cấu hình S3 đầy đủ -> upload S3, ngược lại fallback local
     if settings.s3_enabled:
         try:
             url = await upload_image_to_s3(file, filename, file.content_type)
@@ -281,7 +272,6 @@ async def upload_image(
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"Upload S3 thất bại: {exc}")
 
-    # Fallback lưu local như cũ
     _current_file = os.path.abspath(__file__)
     _routers_dir = os.path.dirname(_current_file)  # Thư mục routers/
     _app_dir = os.path.dirname(_routers_dir)  # Thư mục app/

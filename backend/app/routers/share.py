@@ -88,7 +88,6 @@ async def share_note_with_user(
     current_user: User = Depends(get_current_user),
 ):
     """Share note với một user cụ thể bằng username"""
-    # Kiểm tra note có tồn tại và thuộc về current_user không
     note = await session.get(Note, note_id)
     if not note or note.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -96,7 +95,6 @@ async def share_note_with_user(
     if note.deleted_at:
         raise HTTPException(status_code=400, detail="Cannot share deleted note")
     
-    # Tìm user muốn share
     result = await session.execute(
         select(User).where(User.username == payload.username)
     )
@@ -107,7 +105,6 @@ async def share_note_with_user(
     if target_user.id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot share note with yourself")
     
-    # Kiểm tra xem đã share chưa
     existing = await session.execute(
         select(NoteShare).where(
             NoteShare.note_id == note_id,
@@ -117,7 +114,6 @@ async def share_note_with_user(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Note already shared with this user")
     
-    # Tạo share request
     share = NoteShare(
         note_id=note_id,
         shared_by_user_id=current_user.id,
@@ -126,9 +122,6 @@ async def share_note_with_user(
     )
     session.add(share)
     await session.commit()
-    await session.refresh(share)
-    
-    # Load relationships để trả về
     await session.refresh(share, ["note", "shared_by"])
     
     return schemas.ShareRequestOut(
@@ -200,9 +193,6 @@ async def accept_share(
     share.status = "accepted"
     share.responded_at = datetime.now(timezone.utc)
     await session.commit()
-    await session.refresh(share)
-    
-    # Load relationships
     await session.refresh(share, ["note", "shared_by"])
     
     return schemas.ShareRequestOut(
@@ -238,9 +228,6 @@ async def reject_share(
     share.status = "rejected"
     share.responded_at = datetime.now(timezone.utc)
     await session.commit()
-    await session.refresh(share)
-    
-    # Load relationships
     await session.refresh(share, ["note", "shared_by"])
     
     return schemas.ShareRequestOut(

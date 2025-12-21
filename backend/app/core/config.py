@@ -1,6 +1,6 @@
 import json
 from pydantic_settings import BaseSettings
-from pydantic import Field, computed_field
+from pydantic import Field, computed_field, field_validator
 from typing import List, Optional
 
 
@@ -24,10 +24,21 @@ class Settings(BaseSettings):
     aws_region: Optional[str] = Field(None, alias="AWS_REGION")
     s3_bucket: Optional[str] = Field(None, alias="S3_BUCKET")
 
+    @field_validator('smtp_port', mode='before')
+    @classmethod
+    def parse_smtp_port(cls, v):
+        if v == '' or v is None:
+            return None
+        if isinstance(v, str):
+            try:
+                return int(v)
+            except ValueError:
+                return None
+        return v
+
     @computed_field
     @property
     def cors_origins(self) -> List[str]:
-        """Parse CORS_ORIGINS từ env var"""
         if self.cors_origins_raw is None:
             return ["*"]
         
@@ -35,7 +46,6 @@ class Settings(BaseSettings):
         if not cors_str:
             return ["*"]
         
-        # Thử parse JSON
         try:
             parsed = json.loads(cors_str)
             if isinstance(parsed, list):
@@ -43,7 +53,6 @@ class Settings(BaseSettings):
         except json.JSONDecodeError:
             pass
         
-        # Split bằng comma
         origins = [origin.strip() for origin in cors_str.split(",") if origin.strip()]
         return origins if origins else ["*"]
 
